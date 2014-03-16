@@ -241,10 +241,12 @@ mrb_ipvs_dest_set_weight(mrb_state *mrb, mrb_value self){
   struct mrb_ipvs_entry *svc, *dest;
   mrb_int weight;
   dest = DATA_PTR(self);
-  svc = DATA_PTR(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@service")));
   mrb_get_args(mrb, "i", &weight);
   dest->dest.weight = weight;
-  ipvs_update_dest(&svc->svc, &dest->dest);
+  if (mrb_nil_p(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@service")))) {
+    svc = DATA_PTR(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@service")));
+    ipvs_update_dest(&svc->svc, &dest->dest);
+  }
   return mrb_nil_value();
 }
 
