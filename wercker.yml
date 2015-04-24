@@ -8,10 +8,10 @@ build:
           sudo apt-get -y install bison git make libnl-dev
     - script:
         name: clone mruby
-        code: git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
+        code: git clone https://github.com/mruby/mruby/ /tmp/mruby
     - script:
         name: copy default.gembox
-        code: cp -a .wercker_default.gembox /usr/local/src/mruby/mrbgems/default.gembox
+        code: cp -a .wercker_default.gembox /tmp/mruby/mrbgems/default.gembox
     - script:
         name: rake test
-        code: cd /usr/local/src/mruby && rake
+        code: cd /tmp/mruby && rake test
