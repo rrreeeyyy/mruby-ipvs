@@ -114,9 +114,9 @@ $ sudo su -
 
 # More Informations
 
-* [in Japanese] http://rrreeeyyy.com/blog/2014/03/17/mruby-ipvs/
-* [in Japanese] https://speakerdeck.com/rrreeeyyy/mruby-ipvs
-* [in Japanese] http://rrreeeyyy.com/thesis/thesis.pdf
+* [in Japanese] http://rrreeeyyy.com/blog/2014/03/17/mruby-ipvs/ (blog)
+* [in Japanese] https://speakerdeck.com/rrreeeyyy/mruby-ipvs (presentation)
+* [in Japanese] http://rrreeeyyy.com/thesis/thesis.pdf (graduation thesis)
 
 ## Contributing
 
