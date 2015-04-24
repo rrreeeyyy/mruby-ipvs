@@ -105,7 +105,7 @@ $ cd mruby-ipvs
 $ vagrant up
 ```
 
-# More Information
+## More Information
 
 * [in Japanese] http://rrreeeyyy.com/blog/2014/03/17/mruby-ipvs/ (blog)
 * [in Japanese] https://speakerdeck.com/rrreeeyyy/mruby-ipvs (presentation)
