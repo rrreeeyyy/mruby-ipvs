@@ -7,12 +7,11 @@ VAGRANTFILE_API_VERSION = '2'
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   script = <<SCRIPT
     apt-get -y update
-    apt-get -y install rake
-    apt-get -y install bison
-    apt-get -y install git
-    apt-get -y install libnl-dev
-    apt-get -y install make
-    git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
+    apt-get -y install rake bison git make libnl-dev
+    if [ ! -d /usr/local/src/mruby ]; then
+      git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
+    fi
+    cd /usr/local/src/mruby && rake test
 SCRIPT
 
   config.vm.box = 'ubuntu/trusty64'

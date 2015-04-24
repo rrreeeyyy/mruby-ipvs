@@ -103,13 +103,6 @@ Local Source Testing (Requirements: [Vagrant](https://www.vagrantup.com/))
 $ git clone https://github.com/rrreeeyyy/mruby-ipvs/
 $ cd mruby-ipvs
 $ vagrant up
-$ vagrant ssh
-```
-
-```
-$ sudo su -
-# cp -a /vagrant/.vagrant_default.gembox /usr/local/src/mruby/mrbgems/
-# cd /usr/local/src/mruby/ && rake test
 ```
 
 # More Information
