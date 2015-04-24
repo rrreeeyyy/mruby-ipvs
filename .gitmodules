@@ -1,0 +1,3 @@
+[submodule "ipvsadm"]
+	path = ipvsadm
+	url = git://git.kernel.org/pub/scm/utils/kernel/ipvsadm/ipvsadm.git
