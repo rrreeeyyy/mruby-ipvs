@@ -12,7 +12,13 @@ mruby-ipvs is an interface to the IP Virtual Server(IPVS) for mruby.
 apt-get -y install libnl-dev # or yum -y install libnl-devel, and so on...
 ```
 
-* add `conf.gem` line to `build_config.rb`.
+* clone mruby
+
+```
+git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
+```
+
+* add `conf.gem` line to `build_config.rb` (`/usr/local/src/mruby/build_config.rb`).
 
 ```
 MRuby::Build.new do |conf|
@@ -22,6 +28,17 @@ end
 ```
 
 * build mruby
+
+```
+cd /usr/local/src/mruby && ruby ./minirake
+```
+
+* check the instllation
+
+```
+/usr/local/src/mruby/build/host/bin/mruby -e 'p IPVS'
+IPVS
+```
 
 ## Example
 
@@ -75,8 +92,25 @@ TCP  0A000001:0050 wrr
   -> C0A80001:0050      Masq    3      0          0
 ```
 
-* more examples in `example/`.
-    * `example/keepalived.rb`: Keepalived like DSL.
+* more examples in `examples/`.
+    * `examples/keepalived.rb`: Keepalived like DSL.
+
+## Development
+
+Local Source Testing (Requirements: Vagrant)
+
+```
+$ git clone https://github.com/rrreeeyyy/mruby-ipvs/
+$ cd mruby-ipvs
+$ vagrant up
+$ vagrant ssh
+```
+
+```
+$ sudo su -
+# cp -a /vagrant/.vagrant_default.gembox /usr/local/src/mruby/mrbgems/
+# cd /usr/local/src/mruby/ && rake test
+```
 
 ## Contributing
 
