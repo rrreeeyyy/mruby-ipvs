@@ -93,7 +93,7 @@ TCP  0A000001:0050 wrr
 ```
 
 * more examples in `examples/`.
-    * `examples/keepalived.rb`: [keepalived](https://github.com/acassen/keepalived/commits/master) like DSL.
+    * [examples/keepalived.rb](./examples/keepalived.rb): [keepalived](https://github.com/acassen/keepalived/commits/master) like DSL.
 
 ## Development
 
