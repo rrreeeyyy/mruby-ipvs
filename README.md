@@ -2,7 +2,7 @@
 
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/rrreeeyyy/mruby-ipvs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-mruby-ipvs is an interface to the IP Virtual Server(IPVS) for mruby.
+mruby-ipvs is an interface to the [IP Virtual Server(IPVS)](http://www.linuxvirtualserver.org/software/ipvs.html) for [mruby](https://github.com/mruby/mruby/).
 
 ## Installation
 
@@ -93,11 +93,11 @@ TCP  0A000001:0050 wrr
 ```
 
 * more examples in `examples/`.
-    * `examples/keepalived.rb`: Keepalived like DSL.
+    * `examples/keepalived.rb`: [keepalived](https://github.com/acassen/keepalived/commits/master) like DSL.
 
 ## Development
 
-Local Source Testing (Requirements: Vagrant)
+Local Source Testing (Requirements: [Vagrant](https://www.vagrantup.com/))
 
 ```
 $ git clone https://github.com/rrreeeyyy/mruby-ipvs/
@@ -111,6 +111,12 @@ $ sudo su -
 # cp -a /vagrant/.vagrant_default.gembox /usr/local/src/mruby/mrbgems/
 # cd /usr/local/src/mruby/ && rake test
 ```
+
+# More Informations
+
+* [in Japanese] http://rrreeeyyy.com/blog/2014/03/17/mruby-ipvs/
+* [in Japanese] https://speakerdeck.com/rrreeeyyy/mruby-ipvs
+* [in Japanese] http://rrreeeyyy.com/thesis/thesis.pdf
 
 ## Contributing
 
