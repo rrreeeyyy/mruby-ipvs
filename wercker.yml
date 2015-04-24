@@ -4,8 +4,8 @@ build:
     - script:
         name: install dependencies.
         code: |-
-          apt-get -y update
-          apt-get -y install bison git make libnl-dev
+          sudo apt-get -y update
+          sudo apt-get -y install bison git make libnl-dev
     - script:
         name: clone mruby
         code: git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
