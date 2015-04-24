@@ -34,8 +34,6 @@ struct mrb_ipvs_entry {
   ipvs_daemon_t   daemon;
 };
 
-/* functions {{{ */
-
 static int str_is_digit(const char *str)
 {
   size_t offset;
@@ -97,17 +95,16 @@ int host_to_addr(const char *name, struct in_addr *addr)
 
 static int _modprobe_ipvs(void)
 {
-  char *argv[] = { "/sbin/modprobe", "--", "ip_vs", NULL };
+  const char *const argv[] = { "/sbin/modprobe", "--", "ip_vs", NULL };
   int child;
   int status;
-  int rc;
 
   if (!(child = fork())) {
     execv(argv[0], argv);
     exit(1);
   }
 
-  rc = waitpid(child, &status, 0);
+  waitpid(child, &status, 0);
 
   if (!WIFEXITED(status) || WEXITSTATUS(status)) {
     return 1;
@@ -173,7 +170,7 @@ static int parse_service(char *buf, ipvs_service_t *svc)
 }
 
 static int
-parse_proto(char *proto){
+parse_proto(const char *proto){
   if (strcmp(proto, "udp") == 0 || strcmp(proto, "UDP") == 0)
     return IPPROTO_UDP;
   else if (strcmp(proto, "tcp") == 0 || strcmp(proto, "TCP") == 0)
@@ -181,10 +178,6 @@ parse_proto(char *proto){
   else 
     return parse_proto(DEF_PROTO);
 }
-
-/* functions end }}} */
-
-/* IPVS::Dest {{{ */
 
 static mrb_value
 mrb_ipvs_dest_init(mrb_state *mrb, mrb_value self){
@@ -243,16 +236,12 @@ mrb_ipvs_dest_set_weight(mrb_state *mrb, mrb_value self){
   dest = DATA_PTR(self);
   mrb_get_args(mrb, "i", &weight);
   dest->dest.weight = weight;
-  if (mrb_nil_p(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@service")))) {
+  if (!mrb_nil_p(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@service")))) {
     svc = DATA_PTR(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@service")));
     ipvs_update_dest(&svc->svc, &dest->dest);
   }
   return mrb_nil_value();
 }
-
-/* IPVS::Dest end }}} */
-
-/* IPVS::Service {{{ */
 
 static mrb_value
 mrb_ipvs_service_init(mrb_state *mrb, mrb_value self){
@@ -325,8 +314,6 @@ mrb_ipvs_service_init_copy(mrb_state *mrb, mrb_value copy)
   return copy;
 }
 
-/* IPVS::Service getter {{{ */
-
 static mrb_value
 mrb_ipvs_service_get_addr(mrb_state *mrb, mrb_value self){
   struct mrb_ipvs_entry *ie;
@@ -356,8 +343,6 @@ mrb_ipvs_service_get_sched_name(mrb_state *mrb, mrb_value self){
   ie = DATA_PTR(self);
   return mrb_str_new_cstr(mrb, ie->svc.sched_name);
 }
-
-/* IPVS::Service getter end }}} */
 
 static mrb_value
 mrb_ipvs_service_add(mrb_state *mrb, mrb_value self){
@@ -397,11 +382,11 @@ mrb_ipvs_service_del_dest(mrb_state *mrb, mrb_value self){
   return mrb_nil_value();
 }
 
-/* IPVS::Service end }}} */
-
-/* gem_init {{{ */
-
 void mrb_mruby_ipvs_gem_init(mrb_state *mrb) {
+  struct RClass* _class_ipvs;
+  struct RClass* _class_ipvs_service;
+  struct RClass* _class_ipvs_dest;
+
   /* Initialize IPVS module */
   if (ipvs_init()) {
     if (_modprobe_ipvs() || ipvs_init()) {
@@ -411,9 +396,6 @@ void mrb_mruby_ipvs_gem_init(mrb_state *mrb) {
           "built in the kernel or as module?\n");
     }
   }
-  struct RClass* _class_ipvs;
-  struct RClass* _class_ipvs_service;
-  struct RClass* _class_ipvs_dest;
 
   _class_ipvs = mrb_define_class(mrb, "IPVS", mrb->object_class);
 
@@ -448,10 +430,6 @@ void mrb_mruby_ipvs_gem_init(mrb_state *mrb) {
 
 }
 
-/* gem_init end }}} */
-
 void mrb_mruby_ipvs_gem_final(mrb_state *mrb) {
   ipvs_close();
 }
-
-/* vim:set foldmethod=marker: */
