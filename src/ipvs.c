@@ -172,7 +172,8 @@ static int parse_proto(const char *proto) {
 
 static mrb_value mrb_ipvs_dest_init(mrb_state *mrb, mrb_value self) {
   int parse;
-  mrb_value arg_opt = mrb_nil_value(), addr = mrb_nil_value(),
+  mrb_value arg_opt = mrb_nil_value(),
+            addr = mrb_nil_value(),
             obj = mrb_nil_value();
   mrb_int port, weight;
   struct mrb_ipvs_entry *ie;

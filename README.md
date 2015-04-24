@@ -1,10 +1,91 @@
+# mruby-ipvs
+
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/rrreeeyyy/mruby-ipvs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-mruby-ipvs
-========
 
-interface to ipvs
+mruby-ipvs is an interface to the IP Virtual Server(IPVS) for mruby.
 
-License
--------
+## Installation
 
-GNU General Public License
+* Install dependencies.
+
+```
+apt-get -y install libnl-dev # or yum -y install libnl-devel, and so on...
+```
+
+* add `conf.gem` line to `build_config.rb`.
+
+```
+MRuby::Build.new do |conf|
+  # ... (snip) ...
+  conf.gem :git => 'https://github.com/rrreeeyyy/mruby-ipvs'
+end
+```
+
+* build mruby
+
+## Example
+
+* add service.
+
+```
+# Create IPVS::Service instance.
+s = IPVS::Service.new({
+  'addr' => '10.0.0.1:80',
+  'port' => 80,
+  'sched_name' => 'wrr'
+})
+
+# apply to IPVS.
+s.add_service
+```
+
+* add destination.
+
+```
+# Create IPVS::Dest instance.
+d1 = IPVS::Dest.new({
+  'addr' => '192.168.0.1',
+  'port' => 80,
+  'weight' => 1
+})
+
+d2 = IPVS::Dest.new({
+  'addr' => '192.168.0.2',
+  'port' => 80,
+  'weight' => 1
+})
+
+# Add destination to IPVS::Service instance.
+s.add_dest(d1)
+s.add_dest(d2)
+
+# Change the destination weight.
+d1.weight = 3
+```
+
+* check the results
+
+```
+$ cat /proc/net/ip_vs
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port Forward Weight ActiveConn InActConn
+TCP  0A000001:0050 wrr
+  -> C0A80002:0050      Masq    1      0          0
+  -> C0A80001:0050      Masq    3      0          0
+```
+
+* more examples in `example/`.
+    * `example/keepalived.rb`: Keepalived like DSL.
+
+## Contributing
+
+1. Fork it ( https://github.com/rrreeeyyy/mruby-ipvs/fork )
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create a new Pull Request
+
+## License
+
+GNU General Public License Version 2

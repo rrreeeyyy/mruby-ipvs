@@ -9,8 +9,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     apt-get -y update
     apt-get -y install rake
     apt-get -y install bison
-    apt-get -y install libapr1-dev
-    apt-get -y install libaprutil1-dev
     apt-get -y install git
     apt-get -y install libnl-dev
     apt-get -y install make
