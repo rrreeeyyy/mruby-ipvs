@@ -8,34 +8,34 @@ mruby-ipvs is an interface to the [IP Virtual Server(IPVS)](http://www.linuxvirt
 
 * Install dependencies.
 
-```
+```bash
 apt-get -y install libnl-dev # or yum -y install libnl-devel, and so on...
 ```
 
 * clone mruby
 
-```
+```bash
 git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
 ```
 
 * add `conf.gem` line to `build_config.rb` (`/usr/local/src/mruby/build_config.rb`).
 
-```
+```ruby
 MRuby::Build.new do |conf|
   # ... (snip) ...
-  conf.gem :git => 'https://github.com/rrreeeyyy/mruby-ipvs'
+  conf.gem :git => 'https://github.com/rrreeeyyy/mruby-ipvs.git', :options => '--recursive'
 end
 ```
 
 * build mruby
 
-```
+```bash
 cd /usr/local/src/mruby && ruby ./minirake
 ```
 
 * check the instllation
 
-```
+```bash
 /usr/local/src/mruby/build/host/bin/mruby -e 'p IPVS'
 IPVS
 ```
@@ -44,7 +44,7 @@ IPVS
 
 * add service.
 
-```
+```ruby
 # Create IPVS::Service instance.
 s = IPVS::Service.new({
   'addr' => '10.0.0.1:80',
@@ -58,7 +58,7 @@ s.add_service
 
 * add destination.
 
-```
+```ruby
 # Create IPVS::Dest instance.
 d1 = IPVS::Dest.new({
   'addr' => '192.168.0.1',
@@ -82,7 +82,7 @@ d1.weight = 3
 
 * check the results
 
-```
+```bash
 $ cat /proc/net/ip_vs
 IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
@@ -99,10 +99,11 @@ TCP  0A000001:0050 wrr
 
 Local Source Testing (Requirements: [Vagrant](https://www.vagrantup.com/))
 
-```
+```bash
 $ git clone https://github.com/rrreeeyyy/mruby-ipvs/
 $ cd mruby-ipvs
-$ vagrant up
+$ git submodule update --init
+$ vagrant up # or vagrant provision
 ```
 
 ## More Information
