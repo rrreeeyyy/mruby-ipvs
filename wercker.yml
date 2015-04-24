@@ -1,0 +1,22 @@
+box: wercker/ubuntu12.04-ruby2.0.0
+build:
+  steps:
+    - script:
+      name: echo ruby information
+      code: |
+        echo "ruby version $(ruby --version) running!"
+        echo "from location $(which ruby)"
+    - script:
+      name: install dependencies.
+      code: |
+        apt-get -y update
+        apt-get -y install bison git make libnl-dev
+    - script:
+      name: clone mruby
+      code: git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
+    - script:
+      name: copy default.gembox
+      code: cp -a .wercker_default.gembox /usr/local/src/mruby/mrbgems/default.gembox
+    - script:
+      name: rake test
+      code: cd /usr/local/src/mruby && rake
