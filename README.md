@@ -103,7 +103,8 @@ Local Source Testing (Requirements: [Vagrant](https://www.vagrantup.com/))
 $ git clone https://github.com/rrreeeyyy/mruby-ipvs/
 $ cd mruby-ipvs
 $ git submodule update --init
-$ vagrant up # or vagrant provision
+$ vagrant up
+$ vagrant ssh -c 'cd /usr/local/src/mruby && rake test'
 ```
 
 ## More Information
