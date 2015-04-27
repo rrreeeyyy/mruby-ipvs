@@ -58,25 +58,25 @@ end
 
 module Kernel
   def virtual_server(addr, opts={}, &block)
-    ::Keepalived.virtual_server addr, opts, &block
+    IPVS::Keepalived.virtual_server addr, opts, &block
   end
   def lb_algo(algo)
-    ::Keepalived.lb_algo algo
+    IPVS::Keepalived.lb_algo algo
   end
   def lb_kind(kind)
-    ::Keepalived.lb_kind kind
+    IPVS::Keepalived.lb_kind kind
   end
   def protocol(proto)
-    ::Keepalived.protocol proto
+    IPVS::Keepalived.protocol proto
   end
   def real_server(addr, opts={}, &block)
-    ::Keepalived.real_server addr, opts, &block
+    IPVS::Keepalived.real_server addr, opts, &block
   end
   def healthcheck(&block)
-    ::Keepalived.healthcheck(&block)
+    IPVS::Keepalived.healthcheck(&block)
   end
   def weight(weight)
-    ::Keepalived.weight weight
+    IPVS::Keepalived.weight weight
   end
 end
 
