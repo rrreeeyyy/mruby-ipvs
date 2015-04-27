@@ -19,6 +19,7 @@
 #define SERVICE_ADDR 0x0001
 #define SERVICE_PORT 0x0002
 #define DEF_PROTO "TCP"
+#define DEF_CONN_FLAGS "NAT"
 #define DEF_SCHED "wlc"
 #define DEF_MCAST_IFN "eth0"
 #define DEF_WEIGHT 1
@@ -170,11 +171,21 @@ static int parse_proto(const char *proto) {
     return parse_proto(DEF_PROTO);
 }
 
+static int parse_conn_flags(const char *conn) {
+  if (strcmp(conn, "nat") == 0 || strcmp(conn, "NAT") == 0)
+    return IP_VS_CONN_F_MASQ;
+  else if (strcmp(conn, "dr") == 0 || strcmp(conn, "DR") == 0)
+    return IP_VS_CONN_F_DROUTE;
+  else if (strcmp(conn, "tun") == 0 || strcmp(conn, "TUN") == 0)
+    return IP_VS_CONN_F_TUNNEL;
+  else
+    return parse_conn_flags(DEF_CONN_FLAGS);
+}
+
 static mrb_value mrb_ipvs_dest_init(mrb_state *mrb, mrb_value self) {
   int parse;
-  mrb_value arg_opt = mrb_nil_value(),
-            addr = mrb_nil_value(),
-            obj = mrb_nil_value();
+  mrb_value arg_opt = mrb_nil_value(), addr = mrb_nil_value(),
+            conn = mrb_nil_value(), obj = mrb_nil_value();
   mrb_int port, weight;
   struct mrb_ipvs_entry *ie;
 
@@ -204,6 +215,11 @@ static mrb_value mrb_ipvs_dest_init(mrb_state *mrb, mrb_value self) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid weight value specified");
   }
 
+  conn = mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb, "conn"));
+  if (mrb_nil_p(conn)) {
+    conn = mrb_str_new_cstr(mrb, DEF_CONN_FLAGS);
+  }
+
   if (strrchr((char *)RSTRING_PTR(addr), ':') == NULL) {
     ie->svc.port = htons(port);
   }
@@ -219,6 +235,7 @@ static mrb_value mrb_ipvs_dest_init(mrb_state *mrb, mrb_value self) {
   ie->dest.addr = ie->svc.addr;
   ie->dest.port = ie->svc.port;
   ie->dest.weight = weight;
+  ie->dest.conn_flags = parse_conn_flags((char *)RSTRING_PTR(conn));
 
   DATA_TYPE(self) = &mrb_ipvs_dest_type;
   DATA_PTR(self) = ie;
@@ -238,6 +255,38 @@ static mrb_value mrb_ipvs_dest_set_weight(mrb_state *mrb, mrb_value self) {
   dest = DATA_PTR(self);
   mrb_get_args(mrb, "i", &weight);
   dest->dest.weight = weight;
+  if (!mrb_nil_p(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@service")))) {
+    svc = DATA_PTR(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@service")));
+    ipvs_update_dest(&svc->svc, &dest->dest);
+  }
+  return mrb_nil_value();
+}
+
+static mrb_value mrb_ipvs_dest_get_conn(mrb_state *mrb, mrb_value self) {
+  struct mrb_ipvs_entry *ie;
+  ie = DATA_PTR(self);
+  switch (ie->dest.conn_flags & IP_VS_CONN_F_FWD_MASK) {
+  case IP_VS_CONN_F_MASQ:
+    return mrb_str_new_cstr(mrb, "NAT");
+    break;
+  case IP_VS_CONN_F_LOCALNODE:
+    return mrb_str_new_cstr(mrb, "LOCAL");
+    break;
+  case IP_VS_CONN_F_TUNNEL:
+    return mrb_str_new_cstr(mrb, "TUN");
+    break;
+  case IP_VS_CONN_F_DROUTE:
+    return mrb_str_new_cstr(mrb, "DR");
+    break;
+  }
+}
+
+static mrb_value mrb_ipvs_dest_set_conn(mrb_state *mrb, mrb_value self) {
+  struct mrb_ipvs_entry *svc, *dest;
+  mrb_value conn;
+  dest = DATA_PTR(self);
+  mrb_get_args(mrb, "S", &conn);
+  dest->dest.conn_flags = parse_conn_flags((char *)RSTRING_PTR(conn));
   if (!mrb_nil_p(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@service")))) {
     svc = DATA_PTR(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@service")));
     ipvs_update_dest(&svc->svc, &dest->dest);
@@ -451,6 +500,10 @@ void mrb_mruby_ipvs_gem_init(mrb_state *mrb) {
   mrb_define_method(mrb, _class_ipvs_dest, "weight", mrb_ipvs_dest_get_weight,
                     ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_dest, "weight=", mrb_ipvs_dest_set_weight,
+                    ARGS_NONE());
+  mrb_define_method(mrb, _class_ipvs_dest, "conn", mrb_ipvs_dest_get_conn,
+                    ARGS_NONE());
+  mrb_define_method(mrb, _class_ipvs_dest, "conn=", mrb_ipvs_dest_set_conn,
                     ARGS_NONE());
 
   /* TODO:

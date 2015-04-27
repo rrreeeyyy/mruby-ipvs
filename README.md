@@ -69,15 +69,17 @@ d1 = IPVS::Dest.new({
 d2 = IPVS::Dest.new({
   'addr' => '192.168.0.2',
   'port' => 80,
-  'weight' => 1
+  'weight' => 1,
+  'conn' => 'DR'
 })
 
 # Add destination to IPVS::Service instance.
 s.add_dest(d1)
 s.add_dest(d2)
 
-# Change the destination weight.
+# Change the destination weight, connection flag.
 d1.weight = 3
+d2.conn = 'TUN'
 ```
 
 * check the results
@@ -88,7 +90,7 @@ IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port Forward Weight ActiveConn InActConn
 TCP  0A000001:0050 wrr
-  -> C0A80002:0050      Masq    1      0          0
+  -> C0A80002:0050      Tunnel  1      0          0
   -> C0A80001:0050      Masq    3      0          0
 ```
 

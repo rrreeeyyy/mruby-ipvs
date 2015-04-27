@@ -15,10 +15,12 @@ d1 = IPVS::Dest.new({
 d2 = IPVS::Dest.new({
   'addr' => '192.168.0.2',
   'port' => 80,
-  'weight' => 1
+  'weight' => 1,
+  'conn' => 'DR'
 })
 
 s.add_dest(d1)
 s.add_dest(d2)
 
 d1.weight = 3
+d2.conn = 'TUN'
