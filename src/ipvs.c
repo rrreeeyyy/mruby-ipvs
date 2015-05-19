@@ -28,11 +28,14 @@
 const static struct mrb_data_type mrb_ipvs_service_type = {"Service", mrb_free};
 const static struct mrb_data_type mrb_ipvs_dest_type = {"Dest", mrb_free};
 
-struct mrb_ipvs_entry {
+struct mrb_ipvs_service {
   ipvs_service_t svc;
+  ipvs_service_entry_t ent;
+};
+
+struct mrb_ipvs_dest {
   ipvs_dest_t dest;
-  ipvs_timeout_t timeout;
-  ipvs_daemon_t daemon;
+  ipvs_dest_entry_t ent;
 };
 
 static int str_is_digit(const char *str) {
@@ -89,12 +92,12 @@ int host_to_addr(const char *name, struct in_addr *addr) {
 }
 
 static int _modprobe_ipvs(void) {
-  const char *const argv[] = {"/sbin/modprobe", "--", "ip_vs", NULL};
+  char *const args[3] = {"--", "ip_vs", NULL};
   int child;
   int status;
 
   if (!(child = fork())) {
-    execv(argv[0], argv);
+    execv("/sbin/modprobe", args);
     exit(1);
   }
 
@@ -162,6 +165,59 @@ static int parse_service(char *buf, ipvs_service_t *svc) {
   return result;
 }
 
+static int parse_dest(char *buf, ipvs_dest_t *dest) {
+  char *portp = NULL;
+  long portn;
+  int result = SERVICE_NONE;
+  struct in_addr inaddr;
+  struct in6_addr inaddr6;
+
+  if (buf == NULL || str_is_digit(buf))
+    return SERVICE_NONE;
+  if (buf[0] == '[') {
+    buf++;
+    portp = strchr(buf, ']');
+    if (portp == NULL)
+      return SERVICE_NONE;
+    *portp = '\0';
+    portp++;
+    if (*portp == ':')
+      *portp = '\0';
+    else
+      return SERVICE_NONE;
+  }
+  if (inet_pton(AF_INET6, buf, &inaddr6) > 0) {
+    dest->addr.in6 = inaddr6;
+    dest->af = AF_INET6;
+  } else {
+    portp = strrchr(buf, ':');
+    if (portp != NULL)
+      *portp = '\0';
+
+    if (inet_aton(buf, &inaddr) != 0) {
+      dest->addr.ip = inaddr.s_addr;
+      dest->af = AF_INET;
+    } else if (host_to_addr(buf, &inaddr) != -1) {
+      dest->addr.ip = inaddr.s_addr;
+      dest->af = AF_INET;
+    } else
+      return SERVICE_NONE;
+  }
+
+  result |= SERVICE_ADDR;
+
+  if (portp != NULL) {
+    result |= SERVICE_PORT;
+
+    if ((portn = string_to_number(portp + 1, 0, 65535)) != -1)
+      dest->port = htons(portn);
+    else
+      return SERVICE_NONE;
+  }
+
+  return result;
+}
+
 static int parse_proto(const char *proto) {
   if (strcmp(proto, "udp") == 0 || strcmp(proto, "UDP") == 0)
     return IPPROTO_UDP;
@@ -187,10 +243,10 @@ static mrb_value mrb_ipvs_dest_init(mrb_state *mrb, mrb_value self) {
   mrb_value arg_opt = mrb_nil_value(), addr = mrb_nil_value(),
             conn = mrb_nil_value(), obj = mrb_nil_value();
   mrb_int port, weight;
-  struct mrb_ipvs_entry *ie;
+  struct mrb_ipvs_dest *ie;
 
-  ie = (struct mrb_ipvs_entry *)mrb_malloc(mrb, sizeof(*ie));
-  memset(ie, 0, sizeof(struct mrb_ipvs_entry));
+  ie = (struct mrb_ipvs_dest *)mrb_malloc(mrb, sizeof(*ie));
+  memset(ie, 0, sizeof(struct mrb_ipvs_dest));
 
   mrb_get_args(mrb, "H", &arg_opt);
 
@@ -220,20 +276,17 @@ static mrb_value mrb_ipvs_dest_init(mrb_state *mrb, mrb_value self) {
     conn = mrb_str_new_cstr(mrb, DEF_CONN_FLAGS);
   }
 
+  parse = parse_dest((char *)RSTRING_PTR(addr), &ie->dest);
   if (strrchr((char *)RSTRING_PTR(addr), ':') == NULL) {
-    ie->svc.port = htons(port);
+    ie->dest.port = htons(port);
   }
 
-  parse = parse_service((char *)RSTRING_PTR(addr), &ie->svc);
   if (!(parse & SERVICE_ADDR)) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
   }
 
   mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@service"), mrb_nil_value());
 
-  ie->dest.af = ie->svc.af;
-  ie->dest.addr = ie->svc.addr;
-  ie->dest.port = ie->svc.port;
   ie->dest.weight = weight;
   ie->dest.conn_flags = parse_conn_flags((char *)RSTRING_PTR(conn));
 
@@ -243,14 +296,29 @@ static mrb_value mrb_ipvs_dest_init(mrb_state *mrb, mrb_value self) {
   return self;
 }
 
+static mrb_value mrb_ipvs_dest_get_addr(mrb_state *mrb, mrb_value self) {
+  struct mrb_ipvs_dest *ie;
+  char pbuf[INET6_ADDRSTRLEN];
+  ie = DATA_PTR(self);
+  inet_ntop(ie->dest.af, &ie->dest.addr.ip, pbuf, sizeof(pbuf));
+  return mrb_str_new_cstr(mrb, pbuf);
+}
+
+static mrb_value mrb_ipvs_dest_get_port(mrb_state *mrb, mrb_value self) {
+  struct mrb_ipvs_dest *ie;
+  ie = DATA_PTR(self);
+  return mrb_fixnum_value(ntohs(ie->dest.port));
+}
+
 static mrb_value mrb_ipvs_dest_get_weight(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_entry *ie;
+  struct mrb_ipvs_dest *ie;
   ie = DATA_PTR(self);
   return mrb_fixnum_value(ie->dest.weight);
 }
 
 static mrb_value mrb_ipvs_dest_set_weight(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_entry *svc, *dest;
+  struct mrb_ipvs_service *svc;
+  struct mrb_ipvs_dest *dest;
   mrb_int weight;
   dest = DATA_PTR(self);
   mrb_get_args(mrb, "i", &weight);
@@ -263,7 +331,7 @@ static mrb_value mrb_ipvs_dest_set_weight(mrb_state *mrb, mrb_value self) {
 }
 
 static mrb_value mrb_ipvs_dest_get_conn(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_entry *ie;
+  struct mrb_ipvs_dest *ie;
   ie = DATA_PTR(self);
   switch (ie->dest.conn_flags & IP_VS_CONN_F_FWD_MASK) {
   case IP_VS_CONN_F_MASQ:
@@ -279,10 +347,12 @@ static mrb_value mrb_ipvs_dest_get_conn(mrb_state *mrb, mrb_value self) {
     return mrb_str_new_cstr(mrb, "DR");
     break;
   }
+  return mrb_nil_value();
 }
 
 static mrb_value mrb_ipvs_dest_set_conn(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_entry *svc, *dest;
+  struct mrb_ipvs_service *svc;
+  struct mrb_ipvs_dest *dest;
   mrb_value conn;
   dest = DATA_PTR(self);
   mrb_get_args(mrb, "S", &conn);
@@ -298,14 +368,19 @@ static mrb_value mrb_ipvs_service_init(mrb_state *mrb, mrb_value self) {
   int parse;
   mrb_value arg_opt = mrb_nil_value(), addr = mrb_nil_value(),
             proto = mrb_nil_value(), sched_name = mrb_nil_value(),
-            ops = mrb_nil_value(), obj = mrb_nil_value();
-  mrb_int port, timeout, netmask;
-  struct mrb_ipvs_entry *ie;
+            obj = mrb_nil_value();
+  // mrb_value arg_opt = mrb_nil_value(), addr = mrb_nil_value(),
+  //           proto = mrb_nil_value(), sched_name = mrb_nil_value(),
+  //           ops = mrb_nil_value(), obj = mrb_nil_value();
+  mrb_int port;
+  // mrb_int port, timeout, netmask;
+  struct mrb_ipvs_service *ie;
 
-  ie = (struct mrb_ipvs_entry *)mrb_malloc(mrb, sizeof(*ie));
-  memset(ie, 0, sizeof(struct mrb_ipvs_entry));
+  ie = (struct mrb_ipvs_service *)mrb_malloc(mrb, sizeof(*ie));
+  memset(ie, 0, sizeof(struct mrb_ipvs_service));
 
   mrb_get_args(mrb, "H", &arg_opt);
+
   if (mrb_nil_p(arg_opt)) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
   }
@@ -313,6 +388,12 @@ static mrb_value mrb_ipvs_service_init(mrb_state *mrb, mrb_value self) {
   addr = mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb, "addr"));
   if (mrb_nil_p(addr)) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
+  }
+
+  obj = mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb, "port"));
+  port = mrb_nil_p(obj) ? 0 : mrb_fixnum(obj);
+  if (port < 0 || port > 65535) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid port value specified");
   }
 
   proto = mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb, "protocol"));
@@ -325,17 +406,13 @@ static mrb_value mrb_ipvs_service_init(mrb_state *mrb, mrb_value self) {
     sched_name = mrb_str_new_cstr(mrb, DEF_SCHED);
   }
 
-  obj = mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb, "port"));
-  port = mrb_nil_p(obj) ? 0 : mrb_fixnum(obj);
-  if (port < 0 || port > 65535) {
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
-  }
-
-  ops = mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb, "ops"));
-  timeout =
-      mrb_fixnum(mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb, "timeout")));
-  netmask =
-      mrb_fixnum(mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb, "netmask")));
+  // ops = mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb, "ops"));
+  // timeout =
+  //     mrb_fixnum(mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb,
+  //     "timeout")));
+  // netmask =
+  //     mrb_fixnum(mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb,
+  //     "netmask")));
 
   ie->svc.protocol = parse_proto((char *)RSTRING_PTR(proto));
 
@@ -368,17 +445,17 @@ static mrb_value mrb_ipvs_service_init_copy(mrb_state *mrb, mrb_value copy) {
     mrb_raise(mrb, E_TYPE_ERROR, "wrong argument class");
   }
   if (!DATA_PTR(copy)) {
-    DATA_PTR(copy) =
-        (struct mrb_ipvs_entry *)mrb_malloc(mrb, sizeof(struct mrb_ipvs_entry));
+    DATA_PTR(copy) = (struct mrb_ipvs_service *)mrb_malloc(
+        mrb, sizeof(struct mrb_ipvs_service));
     DATA_TYPE(copy) = &mrb_ipvs_service_type;
   }
-  *(struct mrb_ipvs_entry *)DATA_PTR(copy) =
-      *(struct mrb_ipvs_entry *)DATA_PTR(src);
+  *(struct mrb_ipvs_service *)DATA_PTR(copy) =
+      *(struct mrb_ipvs_service *)DATA_PTR(src);
   return copy;
 }
 
 static mrb_value mrb_ipvs_service_get_addr(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_entry *ie;
+  struct mrb_ipvs_service *ie;
   char pbuf[INET6_ADDRSTRLEN];
   ie = DATA_PTR(self);
   inet_ntop(ie->svc.af, &ie->svc.addr.ip, pbuf, sizeof(pbuf));
@@ -386,20 +463,20 @@ static mrb_value mrb_ipvs_service_get_addr(mrb_state *mrb, mrb_value self) {
 }
 
 static mrb_value mrb_ipvs_service_get_port(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_entry *ie;
+  struct mrb_ipvs_service *ie;
   ie = DATA_PTR(self);
   return mrb_fixnum_value(ntohs(ie->svc.port));
 }
 
 static mrb_value mrb_ipvs_service_get_proto(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_entry *ie;
+  struct mrb_ipvs_service *ie;
   ie = DATA_PTR(self);
   return mrb_str_new_cstr(mrb, ie->svc.protocol == IPPROTO_TCP ? "TCP" : "UDP");
 }
 
 static mrb_value mrb_ipvs_service_get_sched_name(mrb_state *mrb,
                                                  mrb_value self) {
-  struct mrb_ipvs_entry *ie;
+  struct mrb_ipvs_service *ie;
   ie = DATA_PTR(self);
   return mrb_str_new_cstr(mrb, ie->svc.sched_name);
 }
@@ -419,7 +496,7 @@ static mrb_value mrb_ipvs_service_del(mrb_state *mrb, mrb_value self) {
 }
 
 static mrb_value mrb_ipvs_service_add_dest(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_entry *ie;
+  struct mrb_ipvs_dest *ie;
   mrb_value arg;
   mrb_get_args(mrb, "o", &arg);
   if (!(DATA_TYPE(arg) == &mrb_ipvs_dest_type)) {
@@ -432,7 +509,7 @@ static mrb_value mrb_ipvs_service_add_dest(mrb_state *mrb, mrb_value self) {
 }
 
 static mrb_value mrb_ipvs_service_del_dest(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_entry *ie;
+  struct mrb_ipvs_dest *ie;
   mrb_value arg;
   mrb_get_args(mrb, "o", &arg);
   if (!(DATA_TYPE(arg) == &mrb_ipvs_dest_type)) {
@@ -493,9 +570,9 @@ void mrb_mruby_ipvs_gem_init(mrb_state *mrb) {
       mrb_define_class_under(mrb, _class_ipvs, "Dest", mrb->object_class);
   mrb_define_method(mrb, _class_ipvs_dest, "initialize", mrb_ipvs_dest_init,
                     ARGS_REQ(1));
-  mrb_define_method(mrb, _class_ipvs_dest, "addr", mrb_ipvs_service_get_addr,
+  mrb_define_method(mrb, _class_ipvs_dest, "addr", mrb_ipvs_dest_get_addr,
                     ARGS_NONE());
-  mrb_define_method(mrb, _class_ipvs_dest, "port", mrb_ipvs_service_get_port,
+  mrb_define_method(mrb, _class_ipvs_dest, "port", mrb_ipvs_dest_get_port,
                     ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_dest, "weight", mrb_ipvs_dest_get_weight,
                     ARGS_NONE());
