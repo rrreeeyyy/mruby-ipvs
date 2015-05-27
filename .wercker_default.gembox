@@ -1,3 +1,0 @@
-MRuby::GemBox.new do |conf|
-  conf.gem :git => 'https://github.com/rrreeeyyy/mruby-ipvs.git', :options => '--recursive'
-end
