@@ -243,29 +243,30 @@ void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs) {
       mrb_define_class_under(mrb, _class_ipvs, "Service", mrb->object_class);
   MRB_SET_INSTANCE_TT(_class_ipvs_service, MRB_TT_DATA);
   mrb_define_method(mrb, _class_ipvs_service, "initialize",
-                    mrb_ipvs_service_init, ARGS_REQ(1));
+                    mrb_ipvs_service_init, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, _class_ipvs_service, "initialize_copy",
-                    mrb_ipvs_service_init_copy, ARGS_REQ(1) | ARGS_OPT(6));
+                    mrb_ipvs_service_init_copy,
+                    MRB_ARGS_REQ(1) | MRB_ARGS_OPT(6));
   mrb_define_method(mrb, _class_ipvs_service, "add_service",
-                    mrb_ipvs_service_add, ARGS_NONE());
+                    mrb_ipvs_service_add, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_service, "del_service",
-                    mrb_ipvs_service_del, ARGS_NONE());
+                    mrb_ipvs_service_del, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_service, "add_dest",
-                    mrb_ipvs_service_add_dest, ARGS_REQ(1));
+                    mrb_ipvs_service_add_dest, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, _class_ipvs_service, "del_dest",
-                    mrb_ipvs_service_del_dest, ARGS_REQ(1));
+                    mrb_ipvs_service_del_dest, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, _class_ipvs_service, "addr", mrb_ipvs_service_get_addr,
-                    ARGS_NONE());
+                    MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_service, "port", mrb_ipvs_service_get_port,
-                    ARGS_NONE());
+                    MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_service, "proto",
-                    mrb_ipvs_service_get_proto, ARGS_NONE());
+                    mrb_ipvs_service_get_proto, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_service, "sched_name",
-                    mrb_ipvs_service_get_sched_name, ARGS_NONE());
+                    mrb_ipvs_service_get_sched_name, MRB_ARGS_NONE());
   //  mrb_define_method(mrb, _class_ipvs_service, "timeout",
-  //  mrb_ipvs_service_get_timeout, ARGS_NONE());
+  //  mrb_ipvs_service_get_timeout, MRB_ARGS_NONE());
   //  mrb_define_method(mrb, _class_ipvs_service, "netmask",
-  //  mrb_ipvs_service_get_netmask, ARGS_NONE());
+  //  mrb_ipvs_service_get_netmask, MRB_ARGS_NONE());
   //  mrb_define_method(mrb, _class_ipvs_service, "ops",
-  //  mrb_ipvs_service_get_ops, ARGS_NONE());
+  //  mrb_ipvs_service_get_ops, MRB_ARGS_NONE());
 }

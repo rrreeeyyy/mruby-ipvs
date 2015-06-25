@@ -45,18 +45,19 @@ int host_to_addr(const char *name, struct in_addr *addr) {
 }
 
 static int _modprobe_ipvs(void) {
-  char *const args[3] = {"--", "ip_vs", NULL};
+  char const *argv[] = {"/sbin/modprobe", "--", "ip_vs", NULL};
   int child;
   int status;
+  int rc;
 
   if (!(child = fork())) {
-    execv("/sbin/modprobe", args);
+    execv(argv[0], argv);
     exit(1);
   }
 
-  waitpid(child, &status, 0);
+  rc = waitpid(child, &status, 0);
 
-  if (!WIFEXITED(status) || WEXITSTATUS(status)) {
+  if (rc == -1 || !WIFEXITED(status) || WEXITSTATUS(status)) {
     return 1;
   }
   return 0;

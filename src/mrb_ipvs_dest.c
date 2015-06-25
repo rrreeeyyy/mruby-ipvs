@@ -220,19 +220,19 @@ void mrb_ipvs_dest_class_init(mrb_state *mrb, struct RClass *_class_ipvs) {
       mrb_define_class_under(mrb, _class_ipvs, "Dest", mrb->object_class);
   MRB_SET_INSTANCE_TT(_class_ipvs_dest, MRB_TT_DATA);
   mrb_define_method(mrb, _class_ipvs_dest, "initialize", mrb_ipvs_dest_init,
-                    ARGS_REQ(1));
+                    MRB_ARGS_REQ(1));
   mrb_define_method(mrb, _class_ipvs_dest, "initialize_copy",
-                    mrb_ipvs_dest_init_copy, ARGS_REQ(1));
+                    mrb_ipvs_dest_init_copy, MRB_ARGS_REQ(1));
   mrb_define_method(mrb, _class_ipvs_dest, "addr", mrb_ipvs_dest_get_addr,
-                    ARGS_NONE());
+                    MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_dest, "port", mrb_ipvs_dest_get_port,
-                    ARGS_NONE());
+                    MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_dest, "weight", mrb_ipvs_dest_get_weight,
-                    ARGS_NONE());
+                    MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_dest, "weight=", mrb_ipvs_dest_set_weight,
-                    ARGS_NONE());
+                    MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_dest, "conn", mrb_ipvs_dest_get_conn,
-                    ARGS_NONE());
+                    MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_dest, "conn=", mrb_ipvs_dest_set_conn,
-                    ARGS_NONE());
+                    MRB_ARGS_NONE());
 }
