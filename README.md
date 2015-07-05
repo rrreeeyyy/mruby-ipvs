@@ -82,6 +82,19 @@ d1.weight = 3
 d2.conn = 'TUN'
 ```
 
+* sync daemon start/stop
+
+```ruby
+# Create IPVS::Daemon instance.
+
+daemon = IPVS::Daemon.new({
+  'state' => 'master',            # "master" or "backup"
+  'ifname' => 'eth0',
+  'syncid' => 1
+})
+daemon.start()                   # you can daemon.stop() after start.
+```
+
 * check the results
 
 ```bash
@@ -92,6 +105,13 @@ Prot LocalAddress:Port Scheduler Flags
 TCP  0A000001:0050 wrr
   -> C0A80002:0050      Tunnel  1      0          0
   -> C0A80001:0050      Masq    3      0          0
+```
+
+* check the sync daemon multicast group
+
+```
+# netstat -anu | grep 224.0.0.81:8848
+udp        0      0 10.0.2.15:50758         224.0.0.81:8848         ESTABLISHED
 ```
 
 * more examples in `examples/`.
