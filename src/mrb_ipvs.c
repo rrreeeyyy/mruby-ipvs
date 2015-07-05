@@ -2,6 +2,8 @@
 
 void mrb_ipvs_dest_class_init(mrb_state *mrb, struct RClass *_class_ipvs);
 void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs);
+void mrb_ipvs_sync_daemon_class_init(mrb_state *mrb,
+                                     struct RClass *_class_ipvs);
 
 int str_is_digit(const char *str) {
   size_t offset;
@@ -79,6 +81,7 @@ void mrb_mruby_ipvs_gem_init(mrb_state *mrb) {
   _class_ipvs = mrb_define_class(mrb, "IPVS", mrb->object_class);
   mrb_ipvs_service_class_init(mrb, _class_ipvs);
   mrb_ipvs_dest_class_init(mrb, _class_ipvs);
+  mrb_ipvs_sync_daemon_class_init(mrb, _class_ipvs);
 }
 
 void mrb_mruby_ipvs_gem_final(mrb_state *mrb) { ipvs_close(); }
