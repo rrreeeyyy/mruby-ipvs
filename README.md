@@ -86,13 +86,12 @@ d2.conn = 'TUN'
 
 ```ruby
 # Create IPVS::Daemon instance.
-
 daemon = IPVS::Daemon.new({
   'state' => 'master',            # "master" or "backup"
   'ifname' => 'eth0',
   'syncid' => 1
 })
-daemon.start()                   # you can daemon.stop() after start.
+daemon.start()                    # you can daemon.stop() after start.
 ```
 
 * check the results
