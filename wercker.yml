@@ -1,0 +1,76 @@
+box: wercker/rvm
+no-response-timeout: 15
+# Build definition
+build:
+  # The steps that will be executed on build
+  # See the Ruby section on the wercker devcenter:
+  # http://devcenter.wercker.com/articles/languages/ruby.html
+  steps:
+    # Uncomment this to force RVM to use a specific Ruby version
+    - rvm-use:
+        version: 2.1.4
+
+    # A custom script step, name value is used in the UI
+    # and the code value contains the command that get executed
+    - script:
+        name: echo ruby information
+        code: |
+          echo "ruby version $(ruby --version) running"
+          echo "from location $(which ruby)"
+          echo -p "gem list: $(gem list)"
+
+    - script:
+        name: create .ssh directory
+        code: mkdir -p $HOME/.ssh
+
+    - create-file:
+        name: put private key
+        filename: $HOME/.ssh/id_rsa.vagrant
+        overwrite: true
+        hide-from-log: true
+        content: $DIGITALOCEAN_PRIVATE_KEY
+
+    - create-file:
+        name: put public key
+        filename: $HOME/.ssh/id_rsa.vagrant.pub
+        overwrite: true
+        hide-from-log: true
+        content: $DIGITALOCEAN_PUBLIC_KEY
+
+    - script:
+        name: chmod 600 id_rsa
+        code: chmod 600 $HOME/.ssh/id_rsa.vagrant
+
+    - script:
+        name: download vagrant
+        code: wget https://dl.bintray.com/mitchellh/vagrant/vagrant_1.6.3_x86_64.deb
+
+    - script:
+        name: install vagrant
+        code: sudo dpkg -i vagrant_1.6.3_x86_64.deb
+
+    - script:
+        name: install libxml and libxslt
+        code: sudo apt-get install libxml2-dev libxslt1-dev
+
+    - script:
+        name: install vagrant-digitalocean
+        code: NOKOGIRI_USE_SYSTEM_LIBRARIES=1 vagrant plugin install vagrant-digitalocean
+
+    - script:
+        name: start vm
+        code: vagrant up --provider=digital_ocean
+
+    # Add more steps here:
+    - script:
+        name: mruby build
+        code: vagrant ssh -c 'cd /usr/local/src/mruby && sudo rake test'
+
+  after-steps:
+    - script:
+        name: shutdown vm
+        code: vagrant destroy -f
+
+    - script:
+        name: shutdown old vms
+        code: ruby ci/cleanup.rb
