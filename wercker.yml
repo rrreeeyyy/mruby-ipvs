@@ -61,10 +61,6 @@ build:
         name: start vm
         code: vagrant up --provider=digital_ocean
 
-    - script:
-        name: provisioning
-        code: vagrant provision
-
     # Add more steps here:
     - script:
         name: mruby build
