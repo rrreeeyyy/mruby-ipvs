@@ -7,7 +7,7 @@ VAGRANTFILE_API_VERSION = '2'
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   script = <<SCRIPT
   apt-get -y update
-  apt-get -y install rake bison git make libnl-dev
+  apt-get -y install gcc rake bison git make libnl-dev
   if [ ! -d /usr/local/src/mruby ]; then
     git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
   fi
