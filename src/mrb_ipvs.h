@@ -20,7 +20,6 @@
 #include <limits.h>
 
 int str_is_digit(const char *str);
-int string_to_number(const char *s, int min, int max);
 int host_to_addr(const char *name, struct in_addr *addr);
 
 #endif
