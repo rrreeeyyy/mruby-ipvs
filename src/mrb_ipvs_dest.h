@@ -3,7 +3,6 @@
 
 #define DEST_NONE 0x0000
 #define DEST_ADDR 0x0001
-#define DEST_PORT 0x0002
 
 #define DEF_WEIGHT 1
 #define DEF_CONN_FLAGS "NAT"

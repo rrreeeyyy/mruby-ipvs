@@ -3,7 +3,6 @@
 
 #define SERVICE_NONE 0x0000
 #define SERVICE_ADDR 0x0001
-#define SERVICE_PORT 0x0002
 
 #define DEF_PROTO "TCP"
 #define DEF_SCHED "wlc"
