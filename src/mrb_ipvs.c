@@ -19,20 +19,6 @@ int str_is_digit(const char *str) {
   return (offset < top) ? 0 : 1;
 }
 
-int string_to_number(const char *s, int min, int max) {
-  long number;
-  char *end;
-
-  errno = 0;
-  number = strtol(s, &end, 10);
-  if (*end == '\0' && end != s) {
-    /* We parsed a number, let's see if we want this. */
-    if (errno != ERANGE && min <= number && number <= max)
-      return number;
-  }
-  return -1;
-}
-
 int host_to_addr(const char *name, struct in_addr *addr) {
   struct hostent *host;
 

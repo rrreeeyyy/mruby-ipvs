@@ -17,8 +17,7 @@ static int service_to_port(const char *name, unsigned short proto) {
 }
 
 static int parse_service(char *buf, ipvs_service_t *svc) {
-  char *portp = NULL;
-  long portn;
+  char *strp = NULL;
   int result = SERVICE_NONE;
   struct in_addr inaddr;
   struct in6_addr inaddr6;
@@ -27,48 +26,25 @@ static int parse_service(char *buf, ipvs_service_t *svc) {
     return SERVICE_NONE;
   if (buf[0] == '[') {
     buf++;
-    portp = strchr(buf, ']');
-    if (portp == NULL)
+    strp = strchr(buf, ']');
+    if (strp == NULL)
       return SERVICE_NONE;
-    *portp = '\0';
-    portp++;
-    if (*portp == ':')
-      *portp = '\0';
-    else
-      return SERVICE_NONE;
+    *strp = '\0';
   }
   if (inet_pton(AF_INET6, buf, &inaddr6) > 0) {
     svc->addr.in6 = inaddr6;
     svc->af = AF_INET6;
     svc->netmask = 128;
-  } else {
-    portp = strrchr(buf, ':');
-    if (portp != NULL)
-      *portp = '\0';
-
-    if (inet_aton(buf, &inaddr) != 0) {
-      svc->addr.ip = inaddr.s_addr;
-      svc->af = AF_INET;
-    } else if (host_to_addr(buf, &inaddr) != -1) {
-      svc->addr.ip = inaddr.s_addr;
-      svc->af = AF_INET;
-    } else
-      return SERVICE_NONE;
-  }
+  } else if (inet_aton(buf, &inaddr) != 0) {
+    svc->addr.ip = inaddr.s_addr;
+    svc->af = AF_INET;
+  } else if (host_to_addr(buf, &inaddr) != -1) {
+    svc->addr.ip = inaddr.s_addr;
+    svc->af = AF_INET;
+  } else
+    return SERVICE_NONE;
 
   result |= SERVICE_ADDR;
-
-  if (portp != NULL) {
-    result |= SERVICE_PORT;
-
-    if ((portn = string_to_number(portp + 1, 0, 65535)) != -1)
-      svc->port = htons(portn);
-    else if ((portn = service_to_port(portp + 1, svc->protocol)) != -1)
-      svc->port = htons(portn);
-    else
-      return SERVICE_NONE;
-  }
-
   return result;
 }
 
@@ -131,15 +107,13 @@ static mrb_value mrb_ipvs_service_init(mrb_state *mrb, mrb_value self) {
   //     mrb_fixnum(mrb_hash_get(mrb, arg_opt, mrb_str_new_cstr(mrb,
   //     "netmask")));
 
-  ie->svc.protocol = parse_proto((char *)RSTRING_PTR(proto));
-
   parse = parse_service((char *)RSTRING_PTR(addr), &ie->svc);
-  if (strrchr((char *)RSTRING_PTR(addr), ':') == NULL) {
-    ie->svc.port = htons(port);
-  }
+
+  ie->svc.protocol = parse_proto((char *)RSTRING_PTR(proto));
+  ie->svc.port = htons(port);
 
   if (!(parse & SERVICE_ADDR)) {
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid addr value specified");
   }
 
   strncpy(ie->svc.sched_name, (char *)RSTRING_PTR(sched_name),

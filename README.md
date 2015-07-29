@@ -48,7 +48,7 @@ IPVS
 ```ruby
 # Create IPVS::Service instance.
 s = IPVS::Service.new({
-  'addr' => '10.0.0.1:80',
+  'addr' => '10.0.0.1',
   'port' => 80,
   'sched_name' => 'wrr'
 })

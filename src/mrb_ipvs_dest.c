@@ -5,8 +5,7 @@
 const struct mrb_data_type mrb_ipvs_dest_type = {"Dest", mrb_free};
 
 static int parse_dest(char *buf, ipvs_dest_t *dest) {
-  char *portp = NULL;
-  long portn;
+  char *strp = NULL;
   int result = DEST_NONE;
   struct in_addr inaddr;
   struct in6_addr inaddr6;
@@ -15,45 +14,24 @@ static int parse_dest(char *buf, ipvs_dest_t *dest) {
     return DEST_NONE;
   if (buf[0] == '[') {
     buf++;
-    portp = strchr(buf, ']');
-    if (portp == NULL)
+    strp = strchr(buf, ']');
+    if (strp == NULL)
       return DEST_NONE;
-    *portp = '\0';
-    portp++;
-    if (*portp == ':')
-      *portp = '\0';
-    else
-      return DEST_NONE;
+    *strp = '\0';
   }
   if (inet_pton(AF_INET6, buf, &inaddr6) > 0) {
     dest->addr.in6 = inaddr6;
     dest->af = AF_INET6;
-  } else {
-    portp = strrchr(buf, ':');
-    if (portp != NULL)
-      *portp = '\0';
-
-    if (inet_aton(buf, &inaddr) != 0) {
-      dest->addr.ip = inaddr.s_addr;
-      dest->af = AF_INET;
-    } else if (host_to_addr(buf, &inaddr) != -1) {
-      dest->addr.ip = inaddr.s_addr;
-      dest->af = AF_INET;
-    } else
-      return DEST_NONE;
-  }
+  } else if (inet_aton(buf, &inaddr) != 0) {
+    dest->addr.ip = inaddr.s_addr;
+    dest->af = AF_INET;
+  } else if (host_to_addr(buf, &inaddr) != -1) {
+    dest->addr.ip = inaddr.s_addr;
+    dest->af = AF_INET;
+  } else
+    return DEST_NONE;
 
   result |= DEST_ADDR;
-
-  if (portp != NULL) {
-    result |= DEST_PORT;
-
-    if ((portn = string_to_number(portp + 1, 0, 65535)) != -1)
-      dest->port = htons(portn);
-    else
-      return DEST_NONE;
-  }
-
   return result;
 }
 
@@ -107,16 +85,14 @@ static mrb_value mrb_ipvs_dest_init(mrb_state *mrb, mrb_value self) {
   }
 
   parse = parse_dest((char *)RSTRING_PTR(addr), &ie->dest);
-  if (strrchr((char *)RSTRING_PTR(addr), ':') == NULL) {
-    ie->dest.port = htons(port);
-  }
 
   if (!(parse & DEST_ADDR)) {
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid addr value specified");
   }
 
   mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@service"), mrb_nil_value());
 
+  ie->dest.port = htons(port);
   ie->dest.weight = weight;
   ie->dest.conn_flags = parse_conn_flags((char *)RSTRING_PTR(conn));
 
