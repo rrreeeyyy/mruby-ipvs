@@ -47,7 +47,7 @@ build:
 
     - script:
         name: install vagrant
-        code: sudo dpkg -i vagrant_1.6.3_x86_64.deb
+        code: sudo dpkg -i vagrant_1.8.1_x86_64.deb
 
     - script:
         name: install libxml and libxslt
