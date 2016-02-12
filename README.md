@@ -13,37 +13,50 @@ mruby-ipvs is an interface to the [IP Virtual Server(IPVS)](http://www.linuxvirt
 apt-get -y install libnl-dev # or yum -y install libnl-devel, and so on...
 ```
 
-* clone mruby
+* Clone mruby
 
 ```bash
 git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
 ```
 
-* add `conf.gem` line to `build_config.rb` (`/usr/local/src/mruby/build_config.rb`).
+* Set up `build_config.rb`
+
+Use [`mgem`](https://github.com/mruby/mgem-list) (recommended)
+
+```
+mgem add mruby-ipvs
+
+# and add some mgems if you want
+# mgem add ...
+
+mgem config default > /usr/local/src/mruby/build_config.rb # generate build_config.rb
+```
+
+or add `conf.gem` line to `build_config.rb` (`/usr/local/src/mruby/build_config.rb`).
 
 ```ruby
 MRuby::Build.new do |conf|
   # ... (snip) ...
-  conf.gem :git => 'https://github.com/rrreeeyyy/mruby-ipvs.git', :options => '--recursive'
+  conf.gem :git => 'https://github.com/rrreeeyyy/mruby-ipvs', :options => '--recursive'
 end
 ```
 
-* build mruby
+* Build mruby
 
 ```bash
 cd /usr/local/src/mruby && ruby ./minirake
 ```
 
-* check the instllation
+* Check the instllation
 
 ```bash
 /usr/local/src/mruby/build/host/bin/mruby -e 'p IPVS'
 IPVS
 ```
 
-## Example
+## Examples
 
-* add service.
+* Add service.
 
 ```ruby
 # Create IPVS::Service instance.
@@ -57,7 +70,7 @@ s = IPVS::Service.new({
 s.add_service
 ```
 
-* add destination.
+* Add destination.
 
 ```ruby
 # Create IPVS::Dest instance.
@@ -83,7 +96,7 @@ d1.weight = 3
 d2.conn = 'TUN'
 ```
 
-* sync daemon start/stop
+* Sync daemon start/stop
 
 ```ruby
 # Create IPVS::Daemon instance.
@@ -95,7 +108,7 @@ daemon = IPVS::Daemon.new({
 daemon.start()                    # you can daemon.stop() after start.
 ```
 
-* check the results
+* Check the results
 
 ```bash
 $ cat /proc/net/ip_vs
@@ -107,7 +120,7 @@ TCP  0A000001:0050 wrr
   -> C0A80001:0050      Masq    3      0          0
 ```
 
-* check the sync daemon multicast group
+* Check the sync daemon multicast group
 
 ```
 # netstat -anu | grep 224.0.0.81:8848
@@ -115,7 +128,7 @@ udp        0      0 10.0.2.15:50758         224.0.0.81:8848         ESTABLISHED
 ```
 
 * more examples in `examples/`.
-    * [examples/keepalived.rb](./examples/keepalived.rb): [keepalived](https://github.com/acassen/keepalived/commits/master) like DSL.
+    * [examples/keepalived.rb](./examples/keepalived.rb): DSL like [keepalived](https://github.com/acassen/keepalived/commits/master).
 
 ## Development
 
