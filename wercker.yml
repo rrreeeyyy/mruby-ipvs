@@ -8,7 +8,7 @@ build:
   steps:
     # Uncomment this to force RVM to use a specific Ruby version
     - rvm-use:
-        version: 2.1.4
+        version: 2.3.0
 
     # A custom script step, name value is used in the UI
     # and the code value contains the command that get executed
