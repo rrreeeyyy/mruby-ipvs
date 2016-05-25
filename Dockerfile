@@ -22,4 +22,4 @@ RUN mgem add \
 
 RUN ruby ./minirake
 
-CMD ["/usr/local/mruby/build/host/bin/mirb"]
+CMD ["/usr/local/mruby/build/host/bin/mruby"]
