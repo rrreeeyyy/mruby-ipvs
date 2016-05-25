@@ -130,6 +130,34 @@ udp        0      0 10.0.2.15:50758         224.0.0.81:8848         ESTABLISHED
 * more examples in `examples/`.
     * [examples/keepalived.rb](./examples/keepalived.rb): DSL like [keepalived](https://github.com/acassen/keepalived/commits/master).
 
+## Docker
+
+You can run mruby-ipvs with docker.
+
+- Build docker image:
+
+```
+docker build -t mruby-ipvs .
+```
+
+- In docker host machine, load `ip_vs` kernel module.
+
+```
+modprobe ip_vs
+```
+
+or if you use `docker-machine`, just type:
+
+```
+docker-machine ssh ${DOCKER_MACHINE_NAME:-default} sudo modprobe ip_vs
+```
+
+- Then just docker run:
+
+```
+docker run -d mruby-ipvs ${MRUBY_FILE}
+```
+
 ## Development
 
 Local Source Testing (Requirements: [Vagrant](https://www.vagrantup.com/))
