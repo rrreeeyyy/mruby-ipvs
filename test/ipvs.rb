@@ -64,3 +64,23 @@ assert('d = IPVS::Dest.new({"addr" => "10.0.0.1", "weight" => 5, "conn" => "tun"
   dest = IPVS::Dest.new({"addr" => "10.0.0.1", "weight" => 5, "conn" => "tun"})
   dest.conn = "NAT" and dest.conn == "NAT"
 end
+
+# local setup: ci/setup.sh
+assert('IPVS::Service.get') do
+  expect = [
+    {
+      "protocol"=>"TCP",
+      "addr"=>"127.0.0.1",
+      "port"=>80,
+      "sched_name"=>"rr",
+      "dests"=> [{
+          "addr"=>"127.0.0.1",
+          "port"=>80,
+          "weight"=>256,
+          "conn"=>"DR"
+      }]
+    }
+  ]
+
+  assert_equal(expect, IPVS::Service.get)
+end
