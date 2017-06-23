@@ -210,6 +210,101 @@ static mrb_value mrb_ipvs_service_del_dest(mrb_state *mrb, mrb_value self) {
   return mrb_nil_value();
 }
 
+static char *protocol_name(int proto)
+{
+  switch (proto) {
+  case IPPROTO_TCP:
+    return "TCP";
+  case IPPROTO_UDP:
+    return "UDP";
+  case IPPROTO_SCTP:
+    return "SCTP";
+  default:
+    return "?";
+  }
+}
+
+static inline char *fwd_name(unsigned flags)
+{
+  char *fwd = NULL;
+
+  switch (flags & IP_VS_CONN_F_FWD_MASK) {
+  case IP_VS_CONN_F_MASQ:
+    fwd = "NAT";
+    break;
+  case IP_VS_CONN_F_LOCALNODE:
+    fwd = "LOCAL";
+    break;
+  case IP_VS_CONN_F_TUNNEL:
+    fwd = "TUN";
+    break;
+  case IP_VS_CONN_F_DROUTE:
+    fwd = "DR";
+    break;
+  }
+  return fwd;
+}
+
+static mrb_value ipvs_services2hash(mrb_state *mrb, ipvs_service_entry_t *se)
+{
+  struct ip_vs_get_dests *d;
+  char svc_name[1024];
+  char pbuf[INET6_ADDRSTRLEN];
+  char *stype;
+  int i;
+  mrb_value vhash, dhash, dests;
+
+  if (!(d = ipvs_get_dests(se))) {
+    mrb_raisef(mrb, E_RUNTIME_ERROR, "%s", ipvs_strerror(errno));
+  }
+
+  vhash = mrb_hash_new(mrb);
+  inet_ntop(se->af, &(se->addr), pbuf, sizeof(pbuf));
+  stype = protocol_name(se->protocol);
+
+  mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "protocol"), mrb_str_new_cstr(mrb, stype));
+  mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "addr"), mrb_str_new_cstr(mrb, pbuf));
+  mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "port"), mrb_fixnum_value(ntohs(se->port)));
+  mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "sched_name"),
+               mrb_str_new_cstr(mrb, se->sched_name));
+
+  dests = mrb_ary_new(mrb);
+  for (i = 0; i < d->num_dests; i++) {
+    dhash = mrb_hash_new(mrb);
+    ipvs_dest_entry_t *e = &d->entrytable[i];
+
+    inet_ntop(&e->af, &(e->addr), pbuf, sizeof(pbuf));
+    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "addr"), mrb_str_new_cstr(mrb, pbuf));
+    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "port"), mrb_fixnum_value(ntohs(e->port)));
+    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "weight"), mrb_fixnum_value(e->weight));
+    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "conn"),
+                 mrb_str_new_cstr(mrb, fwd_name(e->conn_flags)));
+    mrb_ary_push(mrb, dests, dhash);
+  }
+  mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "dests"), dests);
+
+  mrb_free(mrb, d);
+  return vhash;
+}
+
+static mrb_value mrb_ipvs_service_get(mrb_state *mrb, mrb_value self)
+{
+  struct ip_vs_get_services *get;
+  mrb_value services;
+  int i;
+
+  if (!(get = ipvs_get_services())) {
+    mrb_raisef(mrb, E_RUNTIME_ERROR, "%s", ipvs_strerror(errno));
+  }
+
+  services = mrb_ary_new(mrb);
+  for (i = 0; i < get->num_services; i++)
+    mrb_ary_push(mrb, services, ipvs_services2hash(mrb, &get->entrytable[i]));
+
+  mrb_free(mrb, get);
+  return services;
+}
+
 void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs) {
   struct RClass *_class_ipvs_service;
 
@@ -237,6 +332,8 @@ void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs) {
                     mrb_ipvs_service_get_proto, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_service, "sched_name",
                     mrb_ipvs_service_get_sched_name, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, _class_ipvs_service, "get",
+                    mrb_ipvs_service_get, MRB_ARGS_NONE());
   //  mrb_define_method(mrb, _class_ipvs_service, "timeout",
   //  mrb_ipvs_service_get_timeout, MRB_ARGS_NONE());
   //  mrb_define_method(mrb, _class_ipvs_service, "netmask",
