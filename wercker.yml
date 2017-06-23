@@ -1,4 +1,4 @@
-box: wercker/rvm
+box: ruby
 no-response-timeout: 15
 # Build definition
 build:
@@ -42,16 +42,16 @@ build:
         code: chmod 600 $HOME/.ssh/id_rsa.vagrant
 
     - script:
+        name: install libxml and libxslt
+        code: sudo apt-get update -qqy && sudo apt-get install libxml2-dev libxslt1-dev curl
+
+    - script:
         name: download vagrant
-        code: wget https://releases.hashicorp.com/vagrant/1.8.1/vagrant_1.8.1_x86_64.deb
+        code: curl --help | grep tls && curl --tlsv1.2 -O https://releases.hashicorp.com/vagrant/1.8.1/vagrant_1.8.1_x86_64.deb
 
     - script:
         name: install vagrant
         code: sudo dpkg -i vagrant_1.8.1_x86_64.deb
-
-    - script:
-        name: install libxml and libxslt
-        code: sudo apt-get install libxml2-dev libxslt1-dev
 
     - script:
         name: install vagrant-digitalocean
@@ -62,6 +62,10 @@ build:
         code: vagrant up --provider=digital_ocean
 
     # Add more steps here:
+    - script:
+        name: add virtual server
+        code: vagrant ssh -c 'cd /vagrant && sudo ci/setup.sh'
+
     - script:
         name: mruby build
         code: vagrant ssh -c 'cd /usr/local/src/mruby && sudo rake test'
