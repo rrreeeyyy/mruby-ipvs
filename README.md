@@ -1,7 +1,6 @@
 # mruby-ipvs
 
 [![wercker status](https://app.wercker.com/status/ebc274270b5be552c38d235d307e85aa/s "wercker status")](https://app.wercker.com/project/bykey/ebc274270b5be552c38d235d307e85aa)
-[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/rrreeeyyy/mruby-ipvs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 mruby-ipvs is an interface to the [IP Virtual Server(IPVS)](http://www.linuxvirtualserver.org/software/ipvs.html) for [mruby](https://github.com/mruby/mruby/).
 

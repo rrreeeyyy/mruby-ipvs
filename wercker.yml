@@ -42,20 +42,12 @@ build:
         code: chmod 600 $HOME/.ssh/id_rsa.vagrant
 
     - script:
-        name: download vagrant
-        code: wget https://releases.hashicorp.com/vagrant/1.8.1/vagrant_1.8.1_x86_64.deb
-
-    - script:
-        name: install vagrant
-        code: sudo dpkg -i vagrant_1.8.1_x86_64.deb
-
-    - script:
         name: install libxml and libxslt
         code: sudo apt-get install libxml2-dev libxslt1-dev
 
     - script:
-        name: install vagrant-digitalocean
-        code: NOKOGIRI_USE_SYSTEM_LIBRARIES=1 vagrant plugin install vagrant-digitalocean
+        name: install vagrant
+        code: gem install vagrant vagrant-digitalocean
 
     - script:
         name: start vm
