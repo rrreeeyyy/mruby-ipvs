@@ -1,15 +1,11 @@
-box: wercker/rvm
-no-response-timeout: 15
+box: ruby:2.3.1
+no-response-timeout: 20
 # Build definition
 build:
   # The steps that will be executed on build
   # See the Ruby section on the wercker devcenter:
   # http://devcenter.wercker.com/articles/languages/ruby.html
   steps:
-    # Uncomment this to force RVM to use a specific Ruby version
-    - rvm-use:
-        version: 2.3.0
-
     # A custom script step, name value is used in the UI
     # and the code value contains the command that get executed
     - script:
@@ -42,12 +38,24 @@ build:
         code: chmod 600 $HOME/.ssh/id_rsa.vagrant
 
     - script:
+        name: download vagrant
+        code: wget https://releases.hashicorp.com/vagrant/1.8.1/vagrant_1.8.1_x86_64.deb 
+
+    - script:
+        name: install vagrant
+        code: sudo dpkg -i vagrant_1.8.1_x86_64.deb
+
+    - script:
         name: install libxml and libxslt
         code: sudo apt-get install libxml2-dev libxslt1-dev
 
     - script:
-        name: install vagrant
-        code: gem install vagrant vagrant-digitalocean
+        name: gem install builder -v '3.2.3'
+        code: gem install builder -v '3.2.3'
+
+    - script:
+        name: install vagrant-digitalocean
+        code: NOKOGIRI_USE_SYSTEM_LIBRARIES=1 vagrant plugin install vagrant-digitalocean
 
     - script:
         name: start vm
