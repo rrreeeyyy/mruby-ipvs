@@ -248,9 +248,7 @@ static inline char *fwd_name(unsigned flags)
 static mrb_value ipvs_services2hash(mrb_state *mrb, ipvs_service_entry_t *se)
 {
   struct ip_vs_get_dests *d;
-  char svc_name[1024];
   char pbuf[INET6_ADDRSTRLEN];
-  char *stype;
   int i;
   mrb_value vhash, dhash, dests;
 
@@ -260,9 +258,9 @@ static mrb_value ipvs_services2hash(mrb_state *mrb, ipvs_service_entry_t *se)
 
   vhash = mrb_hash_new(mrb);
   inet_ntop(se->af, &(se->addr), pbuf, sizeof(pbuf));
-  stype = protocol_name(se->protocol);
 
-  mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "protocol"), mrb_str_new_cstr(mrb, stype));
+  mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "protocol"),
+               mrb_str_new_cstr(mrb, protocol_name(se->protocol)));
   mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "addr"), mrb_str_new_cstr(mrb, pbuf));
   mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "port"), mrb_fixnum_value(ntohs(se->port)));
   mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "sched_name"),
