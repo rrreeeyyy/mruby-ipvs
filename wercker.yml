@@ -39,19 +39,15 @@ build:
 
     - script:
         name: download vagrant
-        code: wget https://releases.hashicorp.com/vagrant/1.8.1/vagrant_1.8.1_x86_64.deb 
+        code: wget https://releases.hashicorp.com/vagrant/1.9.5/vagrant_1.9.5_x86_64.deb 
 
     - script:
         name: install vagrant
-        code: sudo dpkg -i vagrant_1.8.1_x86_64.deb
+        code: sudo dpkg -i vagrant_1.9.5_x86_64.deb
 
     - script:
         name: install libxml and libxslt
         code: sudo apt-get install libxml2-dev libxslt1-dev
-
-    - script:
-        name: gem install builder -v '3.2.3'
-        code: gem install builder -v '3.2.3'
 
     - script:
         name: install vagrant-digitalocean
