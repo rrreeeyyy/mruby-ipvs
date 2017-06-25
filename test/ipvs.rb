@@ -79,7 +79,7 @@ def add_service_with(&block)
   end
 end
 
-assert('IPVS::Service#inspect') do
+assert('IPVS::Service.inspect') do
   expect = [
     {
       "protocol"=>"TCP",
@@ -100,7 +100,7 @@ assert('IPVS::Service#inspect') do
   end
 end
 
-assert('IPVS::Service#get') do
+assert('IPVS::Service.get') do
   add_service_with do |s,d|
     current = IPVS::Service.get
     service = current.first
@@ -112,7 +112,7 @@ assert('IPVS::Service#get') do
   end
 end
 
-assert('IPVS::Service.dests') do
+assert('IPVS::Service#dests') do
   add_service_with do |s,d|
     dests = s.dests
     dest= dests.first
@@ -125,7 +125,7 @@ assert('IPVS::Service.dests') do
   end
 end
 
-assert('IPVS::Service.equal?') do
+assert('IPVS::Service#equal?') do
   add_service_with do |s,d|
     expect_service = IPVS::Service.new({"addr" => "127.0.0.1", "port" => 80, "sched_name" => "rr"})
     ng_service     = IPVS::Service.new({"addr" => "127.0.0.2", "port" => 80, "sched_name" => "rr"})
@@ -135,7 +135,7 @@ assert('IPVS::Service.equal?') do
   end
 end
 
-assert('IPVS::Service.deep_equal?') do
+assert('IPVS::Service#deep_equal?') do
   add_service_with do |s,d|
     Dummy = ::Struct.new(:addr, :port, :proto, :sched_name, :dests)
     ng_dest     = IPVS::Dest.new({"addr" => "192.168.0.3", "weight" => 256, "port" => 80, "conn" => "dr"})
@@ -148,7 +148,7 @@ assert('IPVS::Service.deep_equal?') do
   end
 end
 
-assert('IPVS::Dest.equal?') do
+assert('IPVS::Dest#equal?') do
   add_service_with do |s,d|
     expect_dest = IPVS::Dest.new({"addr" => "192.168.0.2", "weight" => 256, "port" => 80, "conn" => "dr"})
     ng_dest     = IPVS::Dest.new({"addr" => "192.168.0.3", "weight" => 256, "port" => 80, "conn" => "dr"})
