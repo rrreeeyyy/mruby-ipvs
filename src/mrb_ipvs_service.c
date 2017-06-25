@@ -120,7 +120,7 @@ static mrb_value mrb_ipvs_service_init(mrb_state *mrb, mrb_value self) {
           IP_VS_SCHEDNAME_MAXLEN);
 
   mrb_data_init(self, ie, &mrb_ipvs_service_type);
-  mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@dests"), mrb_ary_new(mrb));
+  mrb_update_service_dests(mrb, self);
 
   return self;
 }

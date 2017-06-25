@@ -8,6 +8,7 @@
 #define DEF_SCHED "wlc"
 
 extern const struct mrb_data_type mrb_ipvs_service_type;
+static mrb_value mrb_update_service_dests(mrb_state*, mrb_value);
 
 struct mrb_ipvs_service {
   ipvs_service_t svc;
