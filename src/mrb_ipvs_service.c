@@ -245,16 +245,41 @@ static inline char *fwd_name(unsigned flags)
   return fwd;
 }
 
-static mrb_value ipvs_services2hash(mrb_state *mrb, ipvs_service_entry_t *se)
-{
+static mrb_value ipvs_dests2hash(mrb_state *mrb, ipvs_service_entry_t *se) {
   struct ip_vs_get_dests *d;
   char pbuf[INET6_ADDRSTRLEN];
   int i;
-  mrb_value vhash, dhash, dests;
+  mrb_value dhash, dests;
+
+  if (se->num_dests == 0)
+    return mrb_ary_new(mrb);
 
   if (!(d = ipvs_get_dests(se))) {
     mrb_raisef(mrb, E_RUNTIME_ERROR, "%s", ipvs_strerror(errno));
   }
+
+  dests = mrb_ary_new(mrb);
+  for (i = 0; i < d->num_dests; i++) {
+    dhash = mrb_hash_new(mrb);
+    ipvs_dest_entry_t *e = &d->entrytable[i];
+
+    inet_ntop(e->af, &(e->addr), pbuf, sizeof(pbuf));
+    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "addr"), mrb_str_new_cstr(mrb, pbuf));
+    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "port"), mrb_fixnum_value(ntohs(e->port)));
+    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "weight"), mrb_fixnum_value(e->weight));
+    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "conn"),
+                 mrb_str_new_cstr(mrb, fwd_name(e->conn_flags)));
+    mrb_ary_push(mrb, dests, dhash);
+  }
+  mrb_free(mrb, d);
+  return dests;
+}
+
+static mrb_value ipvs_services2hash(mrb_state *mrb, ipvs_service_entry_t *se)
+{
+  char pbuf[INET6_ADDRSTRLEN];
+  int i;
+  mrb_value vhash;
 
   vhash = mrb_hash_new(mrb);
   inet_ntop(se->af, &(se->addr), pbuf, sizeof(pbuf));
@@ -265,31 +290,13 @@ static mrb_value ipvs_services2hash(mrb_state *mrb, ipvs_service_entry_t *se)
   mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "port"), mrb_fixnum_value(ntohs(se->port)));
   mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "sched_name"),
                mrb_str_new_cstr(mrb, se->sched_name));
-
-  dests = mrb_ary_new(mrb);
-  for (i = 0; i < d->num_dests; i++) {
-    dhash = mrb_hash_new(mrb);
-    ipvs_dest_entry_t *e = &d->entrytable[i];
-
-    inet_ntop(&e->af, &(e->addr), pbuf, sizeof(pbuf));
-    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "addr"), mrb_str_new_cstr(mrb, pbuf));
-    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "port"), mrb_fixnum_value(ntohs(e->port)));
-    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "weight"), mrb_fixnum_value(e->weight));
-    mrb_hash_set(mrb, dhash, mrb_str_new_cstr(mrb, "conn"),
-                 mrb_str_new_cstr(mrb, fwd_name(e->conn_flags)));
-    mrb_ary_push(mrb, dests, dhash);
-  }
-  mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "dests"), dests);
-
-  mrb_free(mrb, d);
+  mrb_hash_set(mrb, vhash, mrb_str_new_cstr(mrb, "dests"), ipvs_dests2hash(mrb, se));
   return vhash;
 }
 
-static mrb_value mrb_ipvs_service_inspect(mrb_state *mrb, mrb_value self)
-{
+
+static struct ip_vs_get_services* mrb_ipvs_get_services(mrb_state *mrb) {
   struct ip_vs_get_services *get;
-  mrb_value services;
-  int i;
 
   if (ipvs_getinfo() == -1) {
     mrb_raise(mrb, E_RUNTIME_ERROR, "Can't update ipvsinfo.");
@@ -298,13 +305,58 @@ static mrb_value mrb_ipvs_service_inspect(mrb_state *mrb, mrb_value self)
   if (!(get = ipvs_get_services())) {
     mrb_raisef(mrb, E_RUNTIME_ERROR, "%s", ipvs_strerror(errno));
   }
+  return get;
+}
+static mrb_value mrb_ipvs_service_inspect(mrb_state *mrb, mrb_value self)
+{
+  struct ip_vs_get_services *get;
+  mrb_value services;
+  int i;
 
+  get = mrb_ipvs_get_services(mrb);
   services = mrb_ary_new(mrb);
   for (i = 0; i < get->num_services; i++)
     mrb_ary_push(mrb, services, ipvs_services2hash(mrb, &get->entrytable[i]));
 
   mrb_free(mrb, get);
   return services;
+}
+
+static mrb_value mrb_ipvs_service_get_dests(mrb_state *mrb, mrb_value self) {
+  struct ip_vs_get_services *get;
+  struct mrb_ipvs_service* ie;
+  int i;
+  mrb_value dest_hashs, dests;
+
+  if (ipvs_getinfo() == -1) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Can't update ipvsinfo.");
+  }
+
+  ie = DATA_PTR(self);
+  get = mrb_ipvs_get_services(mrb);
+
+  dest_hashs = mrb_ary_new(mrb);
+  dests = mrb_ary_new(mrb);
+
+  // allways (ip->ent->num_dests == 0) therefore, this process is necessary
+  for (i = 0; i < get->num_services; i++) {
+    if(ie->svc.protocol == get->entrytable[i].protocol &&
+    ie->svc.addr.ip == get->entrytable[i].addr.ip &&
+    ie->svc.port == get->entrytable[i].port &&
+    strcmp(ie->svc.sched_name, get->entrytable[i].sched_name) == 0
+    ) {
+      dest_hashs = ipvs_dests2hash(mrb, &(get->entrytable[i]));
+      break;
+    }
+  }
+
+  int len = RARRAY_LEN(dest_hashs);
+  for (int i = 0; i < len; ++i) {
+    mrb_value h = mrb_ary_entry(dest_hashs, i);
+    mrb_value dest = mrb_obj_new(mrb, mrb_class_get_under(mrb,  mrb_class_get(mrb,"IPVS"), "Dest"), 1, &h);
+    mrb_ary_push(mrb,dests, dest);
+  }
+  return dests;
 }
 
 void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs) {
@@ -334,6 +386,8 @@ void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs) {
                     mrb_ipvs_service_get_proto, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_service, "sched_name",
                     mrb_ipvs_service_get_sched_name, MRB_ARGS_NONE());
+  mrb_define_method(mrb, _class_ipvs_service, "dests", mrb_ipvs_service_get_dests,
+                    MRB_ARGS_NONE());
   mrb_define_class_method(mrb, _class_ipvs_service, "inspect",
                     mrb_ipvs_service_inspect, MRB_ARGS_NONE());
   //  mrb_define_method(mrb, _class_ipvs_service, "timeout",
