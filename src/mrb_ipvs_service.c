@@ -120,6 +120,7 @@ static mrb_value mrb_ipvs_service_init(mrb_state *mrb, mrb_value self) {
           IP_VS_SCHEDNAME_MAXLEN);
 
   mrb_data_init(self, ie, &mrb_ipvs_service_type);
+  mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@dests"), mrb_ary_new(mrb));
 
   return self;
 }
@@ -182,31 +183,6 @@ static mrb_value mrb_ipvs_service_add(mrb_state *mrb, mrb_value self) {
 
 static mrb_value mrb_ipvs_service_del(mrb_state *mrb, mrb_value self) {
   ipvs_del_service(DATA_PTR(self));
-  return mrb_nil_value();
-}
-
-static mrb_value mrb_ipvs_service_add_dest(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_dest *ie;
-  mrb_value arg;
-  mrb_get_args(mrb, "o", &arg);
-  if (!(DATA_TYPE(arg) == &mrb_ipvs_dest_type)) {
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
-  }
-  ie = DATA_PTR(arg);
-  mrb_iv_set(mrb, arg, mrb_intern_lit(mrb, "@service"), self);
-  ipvs_add_dest(DATA_PTR(self), &ie->dest);
-  return mrb_nil_value();
-}
-
-static mrb_value mrb_ipvs_service_del_dest(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_dest *ie;
-  mrb_value arg;
-  mrb_get_args(mrb, "o", &arg);
-  if (!(DATA_TYPE(arg) == &mrb_ipvs_dest_type)) {
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
-  }
-  ie = DATA_PTR(arg);
-  ipvs_del_dest(DATA_PTR(self), &ie->dest);
   return mrb_nil_value();
 }
 
@@ -322,9 +298,10 @@ static mrb_value mrb_ipvs_service_inspect(mrb_state *mrb, mrb_value self)
   return services;
 }
 
-static mrb_value mrb_ipvs_service_get_dests(mrb_state *mrb, mrb_value self) {
+static mrb_value mrb_update_service_dests(mrb_state *mrb, mrb_value self)
+{
   struct ip_vs_get_services *get;
-  struct mrb_ipvs_service* ie;
+  struct mrb_ipvs_service *ie;
   int i;
   mrb_value dest_hashs, dests;
 
@@ -338,13 +315,11 @@ static mrb_value mrb_ipvs_service_get_dests(mrb_state *mrb, mrb_value self) {
   dest_hashs = mrb_ary_new(mrb);
   dests = mrb_ary_new(mrb);
 
-  // allways (ip->ent->num_dests == 0) therefore, this process is necessary
+  // allways (ie->ent->num_dests == 0) therefore, this process is necessary
   for (i = 0; i < get->num_services; i++) {
-    if(ie->svc.protocol == get->entrytable[i].protocol &&
-    ie->svc.addr.ip == get->entrytable[i].addr.ip &&
-    ie->svc.port == get->entrytable[i].port &&
-    strcmp(ie->svc.sched_name, get->entrytable[i].sched_name) == 0
-    ) {
+    if (ie->svc.protocol == get->entrytable[i].protocol &&
+        ie->svc.addr.ip == get->entrytable[i].addr.ip && ie->svc.port == get->entrytable[i].port &&
+        strcmp(ie->svc.sched_name, get->entrytable[i].sched_name) == 0) {
       dest_hashs = ipvs_dests2hash(mrb, &(get->entrytable[i]));
       break;
     }
@@ -353,10 +328,37 @@ static mrb_value mrb_ipvs_service_get_dests(mrb_state *mrb, mrb_value self) {
   int len = RARRAY_LEN(dest_hashs);
   for (int i = 0; i < len; ++i) {
     mrb_value h = mrb_ary_entry(dest_hashs, i);
-    mrb_value dest = mrb_obj_new(mrb, mrb_class_get_under(mrb,  mrb_class_get(mrb,"IPVS"), "Dest"), 1, &h);
-    mrb_ary_push(mrb,dests, dest);
+    mrb_value dest =
+        mrb_obj_new(mrb, mrb_class_get_under(mrb, mrb_class_get(mrb, "IPVS"), "Dest"), 1, &h);
+    mrb_ary_push(mrb, dests, dest);
   }
-  return dests;
+  mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@dests"), dests);
+  return mrb_nil_value();
+}
+
+static mrb_value mrb_ipvs_service_add_dest(mrb_state *mrb, mrb_value self) {
+  struct mrb_ipvs_dest *ie;
+  mrb_value arg;
+  mrb_get_args(mrb, "o", &arg);
+  if (!(DATA_TYPE(arg) == &mrb_ipvs_dest_type)) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
+  }
+  ie = DATA_PTR(arg);
+  mrb_iv_set(mrb, arg, mrb_intern_lit(mrb, "@service"), self);
+  ipvs_add_dest(DATA_PTR(self), &ie->dest);
+  return mrb_update_service_dests(mrb, self);
+}
+
+static mrb_value mrb_ipvs_service_del_dest(mrb_state *mrb, mrb_value self) {
+  struct mrb_ipvs_dest *ie;
+  mrb_value arg;
+  mrb_get_args(mrb, "o", &arg);
+  if (!(DATA_TYPE(arg) == &mrb_ipvs_dest_type)) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
+  }
+  ie = DATA_PTR(arg);
+  ipvs_del_dest(DATA_PTR(self), &ie->dest);
+  return mrb_update_service_dests(mrb, self);
 }
 
 void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs) {
@@ -386,8 +388,6 @@ void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs) {
                     mrb_ipvs_service_get_proto, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_service, "sched_name",
                     mrb_ipvs_service_get_sched_name, MRB_ARGS_NONE());
-  mrb_define_method(mrb, _class_ipvs_service, "dests", mrb_ipvs_service_get_dests,
-                    MRB_ARGS_NONE());
   mrb_define_class_method(mrb, _class_ipvs_service, "inspect",
                     mrb_ipvs_service_inspect, MRB_ARGS_NONE());
   //  mrb_define_method(mrb, _class_ipvs_service, "timeout",

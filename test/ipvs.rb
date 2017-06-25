@@ -137,14 +137,12 @@ end
 
 assert('IPVS::Service#deep_equal?') do
   add_service_with do |s,d|
-    Dummy = ::Struct.new(:addr, :port, :proto, :sched_name, :dests)
-    ng_dest     = IPVS::Dest.new({"addr" => "192.168.0.3", "weight" => 256, "port" => 80, "conn" => "dr"})
+    expect_service = IPVS::Service.new({"addr" => "127.0.0.1", "port" => 80, "sched_name" => "rr"})
+    expect_service.dests = [IPVS::Dest.new({"addr" => "192.168.0.2", "weight" => 256, "port" => 80, "conn" => "dr"})]
+    assert_true(s.deep_equal?(expect_service))
 
-    dummy = Dummy.new("127.0.0.1", 80, "TCP", "rr", [d])
-    assert_true(s.deep_equal?(dummy))
-
-    dummy = Dummy.new("127.0.0.1", 80, "TCP", "rr", [ng_dest])
-    assert_false(s.deep_equal?(dummy))
+    expect_service.dests = [IPVS::Dest.new({"addr" => "192.168.0.3", "weight" => 256, "port" => 80, "conn" => "dr"})]
+    assert_false(s.deep_equal?(expect_service))
   end
 end
 
