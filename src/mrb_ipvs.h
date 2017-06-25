@@ -5,6 +5,7 @@
 #include <mruby/variable.h>
 #include <mruby/string.h>
 #include <mruby/hash.h>
+#include <mruby/array.h>
 #include <mruby/data.h>
 #include <mruby/class.h>
 #include <stdlib.h>
@@ -22,4 +23,5 @@
 int str_is_digit(const char *str);
 int host_to_addr(const char *name, struct in_addr *addr);
 
+#define FMT_NUMERIC		0x0001
 #endif
