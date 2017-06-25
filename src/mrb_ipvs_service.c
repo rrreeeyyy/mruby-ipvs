@@ -291,6 +291,10 @@ static mrb_value mrb_ipvs_service_get(mrb_state *mrb, mrb_value self)
   mrb_value services;
   int i;
 
+  if (ipvs_getinfo() == -1) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Can't update ipvsinfo.");
+  }
+
   if (!(get = ipvs_get_services())) {
     mrb_raisef(mrb, E_RUNTIME_ERROR, "%s", ipvs_strerror(errno));
   }

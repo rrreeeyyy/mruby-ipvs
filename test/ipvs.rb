@@ -82,5 +82,8 @@ assert('IPVS::Service.get') do
     }
   ]
 
+  s = IPVS::Service.new({"addr" => "127.0.0.1", "port" => 80, "sched_name" => "rr"}).add_service
+  d = IPVS::Dest.new({"addr" => "127.0.0.1", "weight" => 256, "port" => 80, "conn" => "dr"})
+  s.add_dest(d)
   assert_equal(expect, IPVS::Service.get)
 end
