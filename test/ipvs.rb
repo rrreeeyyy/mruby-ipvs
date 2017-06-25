@@ -65,8 +65,7 @@ assert('d = IPVS::Dest.new({"addr" => "10.0.0.1", "weight" => 5, "conn" => "tun"
   dest.conn = "NAT" and dest.conn == "NAT"
 end
 
-# local setup: ci/setup.sh
-assert('IPVS::Service.get') do
+assert('IPVS::Service.inpect') do
   expect = [
     {
       "protocol"=>"TCP",
@@ -87,7 +86,7 @@ assert('IPVS::Service.get') do
   begin
     s.add_service
     s.add_dest(d)
-    assert_equal(expect, IPVS::Service.get)
+    assert_equal(expect, IPVS::Service.inspect)
   ensure
     s.del_dest(d)
     s.del_service

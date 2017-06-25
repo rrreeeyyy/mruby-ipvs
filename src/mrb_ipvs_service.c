@@ -285,7 +285,7 @@ static mrb_value ipvs_services2hash(mrb_state *mrb, ipvs_service_entry_t *se)
   return vhash;
 }
 
-static mrb_value mrb_ipvs_service_get(mrb_state *mrb, mrb_value self)
+static mrb_value mrb_ipvs_service_inspect(mrb_state *mrb, mrb_value self)
 {
   struct ip_vs_get_services *get;
   mrb_value services;
@@ -334,8 +334,8 @@ void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs) {
                     mrb_ipvs_service_get_proto, MRB_ARGS_NONE());
   mrb_define_method(mrb, _class_ipvs_service, "sched_name",
                     mrb_ipvs_service_get_sched_name, MRB_ARGS_NONE());
-  mrb_define_class_method(mrb, _class_ipvs_service, "get",
-                    mrb_ipvs_service_get, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, _class_ipvs_service, "inspect",
+                    mrb_ipvs_service_inspect, MRB_ARGS_NONE());
   //  mrb_define_method(mrb, _class_ipvs_service, "timeout",
   //  mrb_ipvs_service_get_timeout, MRB_ARGS_NONE());
   //  mrb_define_method(mrb, _class_ipvs_service, "netmask",
