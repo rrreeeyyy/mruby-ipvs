@@ -8,8 +8,8 @@ MRuby::Gem::Specification.new('mruby-ipvs') do |spec|
     f.relative_path_from(spec.dir).pathmap("#{build_dir}/%X.o")
   end
   spec.add_test_dependency 'mruby-require'
-  spec.add_test_dependency 'mruby-array-ext'
-  spec.add_test_dependency 'mruby-hash-ext'
-  spec.add_test_dependency 'mruby-print'
+  spec.add_test_dependency 'mruby-array-ext', :core => 'mruby-array-ext'
+  spec.add_test_dependency 'mruby-hash-ext', :core => 'mruby-hash-ext'
+  spec.add_test_dependency 'mruby-print', :core => 'mruby-print'
   spec.add_test_dependency('mruby-io', :github => 'iij/mruby-io')
 end
