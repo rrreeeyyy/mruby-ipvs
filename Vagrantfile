@@ -12,13 +12,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
   fi
   cd /usr/local/src/mruby
-  git checkout #{ENV['WERCKER_BRANCH']}
   cp -a /vagrant/.vagrant_default.gembox /usr/local/src/mruby/mrbgems/default.gembox
 SCRIPT
 
   config.vm.define :trusty do |c|
     c.vm.hostname  = 'mruby-ipvs-trusty'
-    c.vm.synced_folder ".", "/vagrant", disabled: true if ENV['WERCKER']
+    c.vm.synced_folder ".", "/vagrant", type: "rsync" if ENV['WERCKER']
     c.vm.hostname += "-#{ENV['WERCKER_BUILD_ID']}" if ENV['WERCKER_BUILD_ID']
     c.vm.provider :virtualbox do |_, override|
       override.vm.box = 'ubuntu/trusty64'

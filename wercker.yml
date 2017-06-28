@@ -47,7 +47,9 @@ build:
 
     - script:
         name: install libxml and libxslt
-        code: sudo apt-get install libxml2-dev libxslt1-dev
+        code: |
+          sudo apt update
+          sudo apt install libxml2-dev libxslt1-dev
 
     - script:
         name: install vagrant-digitalocean
