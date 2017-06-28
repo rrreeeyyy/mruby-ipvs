@@ -46,10 +46,9 @@ build:
         code: sudo dpkg -i vagrant_1.9.5_x86_64.deb
 
     - script:
-        name: install libxml and libxslt
+        name: install libxml, libxslt and rsync
         code: |
-          sudo apt update
-          sudo apt install libxml2-dev libxslt1-dev
+          DEBIAN_FRONTEND=noninteractiv sudo apt -y update && sudo apt install -y libxml2-dev libxslt1-dev rsync
 
     - script:
         name: install vagrant-digitalocean
