@@ -49,3 +49,16 @@ assert('IPVS::Dest#equal?') do
     assert_false(d[0].equal?(ng_dest))
   end
 end
+
+assert('IPVS::Dest.to_h') do
+  expect = {
+   "addr"=>"192.168.0.1",
+    "port"=>80,
+    "weight"=>256,
+    "conn"=>"DR"
+  }
+
+  add_service_with do |s,d|
+    assert_equal(expect, d.first.to_h)
+  end
+end

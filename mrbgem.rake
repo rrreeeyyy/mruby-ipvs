@@ -8,4 +8,7 @@ MRuby::Gem::Specification.new('mruby-ipvs') do |spec|
     f.relative_path_from(spec.dir).pathmap("#{build_dir}/%X.o")
   end
   spec.add_test_dependency 'mruby-require'
+  spec.add_test_dependency 'mruby-array-ext'
+  spec.add_test_dependency 'mruby-hash-ext'
+  spec.add_test_dependency 'mruby-print'
 end

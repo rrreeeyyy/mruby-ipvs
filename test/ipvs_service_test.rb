@@ -67,23 +67,29 @@ assert('IPVS::Service#deep_equal?') do
   end
 end
 
-assert('IPVS::Service.inspect') do
-  expect = [
-    {
-      "protocol"=>"TCP",
-      "addr"=>"127.0.0.1",
-      "port"=>80,
-      "sched_name"=>"rr",
-      "dests"=> [{
-        "addr"=>"192.168.0.2",
-          "port"=>80,
-          "weight"=>256,
-          "conn"=>"DR"
-      }]
-    }
-  ]
+assert('IPVS::Service.to_h') do
+  expect = {
+    "proto"=>"TCP",
+    "addr"=>"127.0.0.1",
+    "port"=>80,
+    "sched_name"=>"rr",
+    "dests"=> [
+      {
+       "addr"=>"192.168.0.1",
+        "port"=>80,
+        "weight"=>256,
+        "conn"=>"DR"
+      },
+      {
+       "addr"=>"192.168.0.2",
+        "port"=>80,
+        "weight"=>256,
+        "conn"=>"DR"
+      }
+    ]
+  }
 
   add_service_with do |s,d|
-    assert_equal(expect, IPVS::Service.inspect)
+    assert_equal(expect, s.first.to_h)
   end
 end
