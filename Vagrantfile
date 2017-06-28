@@ -11,9 +11,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   if [ ! -d /usr/local/src/mruby ]; then
     git clone https://github.com/mruby/mruby/ /usr/local/src/mruby
   fi
-  cp -a /vagrant/.vagrant_default.gembox /usr/local/src/mruby/mrbgems/default.gembox
   cd /usr/local/src/mruby
   git checkout #{ENV['WERCKER_BRANCH']}
+  cp -a /vagrant/.vagrant_default.gembox /usr/local/src/mruby/mrbgems/default.gembox
 SCRIPT
 
   config.vm.define :trusty do |c|
