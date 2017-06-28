@@ -61,7 +61,7 @@ build:
     # Add more steps here:
     - script:
         name: mruby build
-        code: vagrant ssh -c 'cd /usr/local/src/mruby && sudo rake test'
+        code: vagrant ssh -c 'cd /vagrant/ && git submodule update --init && cd /usr/local/src/mruby && sudo rake test'
 
   after-steps:
     - script:
