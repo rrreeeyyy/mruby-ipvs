@@ -11,4 +11,5 @@ MRuby::Gem::Specification.new('mruby-ipvs') do |spec|
   spec.add_test_dependency 'mruby-array-ext'
   spec.add_test_dependency 'mruby-hash-ext'
   spec.add_test_dependency 'mruby-print'
+  spec.add_test_dependency('mruby-io', :github => 'iij/mruby-io')
 end

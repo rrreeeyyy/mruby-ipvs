@@ -1,7 +1,8 @@
 ##
 # mruby-ipvs test
 
-require '../test/helper'
+require File.expand_path('../helper', __FILE__)
+
 assert('define module IPVS') do
   Object.const_defined?(:IPVS)
 end

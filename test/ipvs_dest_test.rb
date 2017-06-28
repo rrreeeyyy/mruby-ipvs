@@ -1,4 +1,4 @@
-require '../test/helper'
+require File.expand_path('../helper', __FILE__)
 
 assert('IPVS::Dest.new({"addr" => "10.0.0.1"})') do
   dest = IPVS::Dest.new({"addr" => "10.0.0.1"})
