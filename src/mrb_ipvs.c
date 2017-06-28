@@ -1,4 +1,5 @@
 #include "mrb_ipvs.h"
+#include "mrb_ipvs_service.h"
 
 void mrb_ipvs_dest_class_init(mrb_state *mrb, struct RClass *_class_ipvs);
 void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs);
@@ -51,6 +52,57 @@ static int _modprobe_ipvs(void) {
   return 0;
 }
 
+static struct ip_vs_get_services* mrb_ipvs_get_services(mrb_state *mrb) {
+  struct ip_vs_get_services *get;
+
+  if (ipvs_getinfo() == -1) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Can't update ipvsinfo.");
+  }
+
+  if (!(get = ipvs_get_services())) {
+    mrb_raisef(mrb, E_RUNTIME_ERROR, "%s", ipvs_strerror(errno));
+  }
+  return get;
+}
+
+static mrb_value mrb_ipvs_services(mrb_state *mrb, mrb_value self)
+{
+  struct ip_vs_get_services *get;
+  char pbuf[INET6_ADDRSTRLEN];
+  int i;
+  ipvs_service_entry_t *se;
+  mrb_value services, service, h;
+
+  if (ipvs_getinfo() == -1) {
+    mrb_raise(mrb, E_RUNTIME_ERROR, "Can't update ipvsinfo.");
+  }
+
+  get = mrb_ipvs_get_services(mrb);
+  ipvs_sort_services(get, ipvs_cmp_services);
+  services = mrb_ary_new(mrb);
+
+  for (i = 0; i < get->num_services; i++) {
+    h = mrb_hash_new(mrb);
+
+    se = &get->entrytable[i];
+    inet_ntop(se->af, &(se->addr), pbuf, sizeof(pbuf));
+
+    mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "protocol"),
+                 mrb_str_new_cstr(mrb, se->protocol == IPPROTO_TCP ? "TCP" : "UDP"));
+    mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "addr"), mrb_str_new_cstr(mrb, pbuf));
+    mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "port"), mrb_fixnum_value(ntohs(se->port)));
+    mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "sched_name"),
+                 mrb_str_new_cstr(mrb, se->sched_name));
+    service = mrb_obj_new(mrb, mrb_class_get_under(mrb, mrb_class_get(mrb, "IPVS"), "Service"), 1, &h);
+    mrb_update_service_dests(mrb, service, get);
+    mrb_ary_push(mrb, services, service);
+  }
+
+  mrb_free(mrb, get);
+  return services;
+}
+
+
 void mrb_mruby_ipvs_gem_init(mrb_state *mrb) {
   struct RClass *_class_ipvs;
 
@@ -67,6 +119,8 @@ void mrb_mruby_ipvs_gem_init(mrb_state *mrb) {
   _class_ipvs = mrb_define_class(mrb, "IPVS", mrb->object_class);
   mrb_ipvs_service_class_init(mrb, _class_ipvs);
   mrb_ipvs_dest_class_init(mrb, _class_ipvs);
+  mrb_define_class_method(mrb, _class_ipvs, "services",
+                    mrb_ipvs_services, MRB_ARGS_NONE());
   mrb_ipvs_sync_daemon_class_init(mrb, _class_ipvs);
 }
 

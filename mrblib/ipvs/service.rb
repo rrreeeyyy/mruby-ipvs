@@ -1,18 +1,6 @@
 class IPVS
   class Service
     attr_accessor :dests
-    def self.get
-      current = inspect
-      current.map do |h|
-        dests = h.delete("dests")
-        s = self.new(
-          h
-        )
-        s.dests = dests.map {|d| Dest.new(d) } if dests
-        s
-      end if current
-    end
-
     def equal?(b)
       %w(
         proto

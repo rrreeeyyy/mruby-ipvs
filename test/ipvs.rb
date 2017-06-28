@@ -66,16 +66,21 @@ assert('d = IPVS::Dest.new({"addr" => "10.0.0.1", "weight" => 5, "conn" => "tun"
 end
 
 def add_service_with(&block)
-  s = IPVS::Service.new({"addr" => "127.0.0.1", "port" => 80, "sched_name" => "rr"})
-  d = IPVS::Dest.new({"addr" => "192.168.0.2", "weight" => 256, "port" => 80, "conn" => "dr"})
+  s1 = IPVS::Service.new({"addr" => "127.0.0.1", "port" => 80, "sched_name" => "rr"})
+  d1 = IPVS::Dest.new({"addr" => "192.168.0.1", "weight" => 256, "port" => 80, "conn" => "dr"})
+  d2 = IPVS::Dest.new({"addr" => "192.168.0.2", "weight" => 256, "port" => 80, "conn" => "dr"})
+
+  s2 = IPVS::Service.new({"addr" => "127.0.0.1", "port" => 443, "sched_name" => "rr"})
 
   begin
-    s.add_service
-    s.add_dest(d)
-    block.call(s, d)
+    s1.add_service
+    s2.add_service
+    s1.add_dest(d1)
+    s1.add_dest(d2)
+    block.call([s1, s2], [d1, d2])
   ensure
-    s.del_dest(d)
-    s.del_service
+    s1.del_service
+    s2.del_service
   end
 end
 
@@ -100,28 +105,43 @@ assert('IPVS::Service.inspect') do
   end
 end
 
-assert('IPVS::Service.get') do
+assert('IPVS.services') do
   add_service_with do |s,d|
-    current = IPVS::Service.get
+    current = IPVS.services
     service = current.first
 
-    assert_equal(1, current.length)
+    assert_equal(2, current.length)
     assert_equal("127.0.0.1", service.addr)
     assert_equal(80, service.port)
+    assert_equal("rr", service.sched_name)
+
+    service = current.last
+
+    assert_equal("127.0.0.1", service.addr)
+    assert_equal(443, service.port)
     assert_equal("rr", service.sched_name)
   end
 end
 
 assert('IPVS::Service#dests') do
   add_service_with do |s,d|
-    dests = s.dests
-    dest= dests.first
+    dests = s[0].dests
+    dest = dests.first
 
-    assert_equal(1, dests.length)
+    assert_equal(2, dests.length)
+    assert_equal("192.168.0.1", dest.addr)
+    assert_equal(80, dest.port)
+    assert_equal(256, dest.weight)
+    assert_equal("DR", dest.conn)
+
+    dest = dests.last
     assert_equal("192.168.0.2", dest.addr)
     assert_equal(80, dest.port)
     assert_equal(256, dest.weight)
     assert_equal("DR", dest.conn)
+
+    dests = s[1].dests
+    assert_equal(0, dests.length)
   end
 end
 
@@ -130,28 +150,32 @@ assert('IPVS::Service#equal?') do
     expect_service = IPVS::Service.new({"addr" => "127.0.0.1", "port" => 80, "sched_name" => "rr"})
     ng_service     = IPVS::Service.new({"addr" => "127.0.0.2", "port" => 80, "sched_name" => "rr"})
 
-    assert_true(s.equal?(expect_service))
-    assert_false(s.equal?(ng_service))
+    assert_true(s[0].equal?(expect_service))
+    assert_false(s[0].equal?(ng_service))
   end
 end
 
 assert('IPVS::Service#deep_equal?') do
   add_service_with do |s,d|
     expect_service = IPVS::Service.new({"addr" => "127.0.0.1", "port" => 80, "sched_name" => "rr"})
-    expect_service.dests = [IPVS::Dest.new({"addr" => "192.168.0.2", "weight" => 256, "port" => 80, "conn" => "dr"})]
-    assert_true(s.deep_equal?(expect_service))
+    expect_service.dests = [
+      IPVS::Dest.new({"addr" => "192.168.0.1", "weight" => 256, "port" => 80, "conn" => "dr"}),
+      IPVS::Dest.new({"addr" => "192.168.0.2", "weight" => 256, "port" => 80, "conn" => "dr"})
+    ]
+
+    assert_true(s[0].deep_equal?(expect_service))
 
     expect_service.dests = [IPVS::Dest.new({"addr" => "192.168.0.3", "weight" => 256, "port" => 80, "conn" => "dr"})]
-    assert_false(s.deep_equal?(expect_service))
+    assert_false(s[0].deep_equal?(expect_service))
   end
 end
 
 assert('IPVS::Dest#equal?') do
   add_service_with do |s,d|
-    expect_dest = IPVS::Dest.new({"addr" => "192.168.0.2", "weight" => 256, "port" => 80, "conn" => "dr"})
+    expect_dest = IPVS::Dest.new({"addr" => "192.168.0.1", "weight" => 256, "port" => 80, "conn" => "dr"})
     ng_dest     = IPVS::Dest.new({"addr" => "192.168.0.3", "weight" => 256, "port" => 80, "conn" => "dr"})
 
-    assert_true(d.equal?(expect_dest))
-    assert_false(d.equal?(ng_dest))
+    assert_true(d[0].equal?(expect_dest))
+    assert_false(d[0].equal?(ng_dest))
   end
 end
