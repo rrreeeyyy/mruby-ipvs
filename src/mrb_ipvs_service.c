@@ -174,17 +174,29 @@ static mrb_value mrb_ipvs_service_del(mrb_state *mrb, mrb_value self) {
   return mrb_nil_value();
 }
 
-static struct ip_vs_get_services* mrb_ipvs_get_services(mrb_state *mrb) {
-  struct ip_vs_get_services *get;
-
-  if (ipvs_getinfo() == -1) {
-    mrb_raise(mrb, E_RUNTIME_ERROR, "Can't update ipvsinfo.");
+static mrb_value mrb_ipvs_service_add_dest(mrb_state *mrb, mrb_value self) {
+  struct mrb_ipvs_dest *ie;
+  mrb_value arg;
+  mrb_get_args(mrb, "o", &arg);
+  if (!(DATA_TYPE(arg) == &mrb_ipvs_dest_type)) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
   }
+  ie = DATA_PTR(arg);
+  mrb_iv_set(mrb, arg, mrb_intern_lit(mrb, "@service"), self);
+  ipvs_add_dest(DATA_PTR(self), &ie->dest);
+  return mrb_update_service_dests(mrb, self, NULL);
+}
 
-  if (!(get = ipvs_get_services())) {
-    mrb_raisef(mrb, E_RUNTIME_ERROR, "%s", ipvs_strerror(errno));
+static mrb_value mrb_ipvs_service_del_dest(mrb_state *mrb, mrb_value self) {
+  struct mrb_ipvs_dest *ie;
+  mrb_value arg;
+  mrb_get_args(mrb, "o", &arg);
+  if (!(DATA_TYPE(arg) == &mrb_ipvs_dest_type)) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
   }
-  return get;
+  ie = DATA_PTR(arg);
+  ipvs_del_dest(DATA_PTR(self), &ie->dest);
+  return mrb_update_service_dests(mrb, self, NULL);
 }
 
 static inline char *fwd_name(unsigned flags)
@@ -261,31 +273,6 @@ mrb_value mrb_update_service_dests(mrb_state *mrb, mrb_value self, struct ip_vs_
   mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@dests"), dests);
 
   return mrb_nil_value();
-}
-
-static mrb_value mrb_ipvs_service_add_dest(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_dest *ie;
-  mrb_value arg;
-  mrb_get_args(mrb, "o", &arg);
-  if (!(DATA_TYPE(arg) == &mrb_ipvs_dest_type)) {
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
-  }
-  ie = DATA_PTR(arg);
-  mrb_iv_set(mrb, arg, mrb_intern_lit(mrb, "@service"), self);
-  ipvs_add_dest(DATA_PTR(self), &ie->dest);
-  return mrb_update_service_dests(mrb, self, NULL);
-}
-
-static mrb_value mrb_ipvs_service_del_dest(mrb_state *mrb, mrb_value self) {
-  struct mrb_ipvs_dest *ie;
-  mrb_value arg;
-  mrb_get_args(mrb, "o", &arg);
-  if (!(DATA_TYPE(arg) == &mrb_ipvs_dest_type)) {
-    mrb_raise(mrb, E_ARGUMENT_ERROR, "invalid argument");
-  }
-  ie = DATA_PTR(arg);
-  ipvs_del_dest(DATA_PTR(self), &ie->dest);
-  return mrb_update_service_dests(mrb, self, NULL);
 }
 
 void mrb_ipvs_service_class_init(mrb_state *mrb, struct RClass *_class_ipvs) {

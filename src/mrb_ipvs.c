@@ -52,7 +52,7 @@ static int _modprobe_ipvs(void) {
   return 0;
 }
 
-static struct ip_vs_get_services* mrb_ipvs_get_services(mrb_state *mrb) {
+struct ip_vs_get_services* mrb_ipvs_get_services(mrb_state *mrb) {
   struct ip_vs_get_services *get;
 
   if (ipvs_getinfo() == -1) {
