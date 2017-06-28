@@ -16,6 +16,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 SCRIPT
 
   config.vm.define :trusty do |c|
+    c.ssh.pty = true
     c.vm.hostname  = 'mruby-ipvs-trusty'
     c.vm.synced_folder ".", "/vagrant", type: "rsync" if ENV['WERCKER']
     c.vm.hostname += "-#{ENV['WERCKER_BUILD_ID']}" if ENV['WERCKER_BUILD_ID']
