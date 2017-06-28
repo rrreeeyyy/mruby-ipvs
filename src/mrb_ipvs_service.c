@@ -199,9 +199,9 @@ static mrb_value mrb_ipvs_service_del_dest(mrb_state *mrb, mrb_value self) {
   return mrb_update_service_dests(mrb, self, NULL);
 }
 
-static inline char *fwd_name(unsigned flags)
+static inline const char *fwd_name(unsigned flags)
 {
-  char *fwd = NULL;
+  const char *fwd = NULL;
 
   switch (flags & IP_VS_CONN_F_FWD_MASK) {
   case IP_VS_CONN_F_MASQ:
