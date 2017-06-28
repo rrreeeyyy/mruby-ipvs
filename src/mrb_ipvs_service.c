@@ -4,18 +4,6 @@
 
 const struct mrb_data_type mrb_ipvs_service_type = {"Service", mrb_free};
 
-static int service_to_port(const char *name, unsigned short proto) {
-  struct servent *service;
-
-  if (proto == IPPROTO_TCP && (service = getservbyname(name, "tcp")) != NULL)
-    return ntohs((unsigned short)service->s_port);
-  else if (proto == IPPROTO_UDP &&
-           (service = getservbyname(name, "udp")) != NULL)
-    return ntohs((unsigned short)service->s_port);
-  else
-    return -1;
-}
-
 static int parse_service(char *buf, ipvs_service_t *svc) {
   char *strp = NULL;
   int result = SERVICE_NONE;
