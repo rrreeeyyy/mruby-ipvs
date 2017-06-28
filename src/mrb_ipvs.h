@@ -22,6 +22,8 @@
 
 int str_is_digit(const char *str);
 int host_to_addr(const char *name, struct in_addr *addr);
+struct ip_vs_get_services* mrb_ipvs_get_services(mrb_state *mrb);
 
 #define FMT_NUMERIC		0x0001
+#define RARRAY_LEN(a) (RARRAY(a)->len)
 #endif

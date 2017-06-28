@@ -1,29 +1,4 @@
-##
-# mruby-ipvs test
-
-assert('define module IPVS') do
-  Object.const_defined?(:IPVS)
-end
-
-assert('IPVS::Service.new({"addr" => "10.0.0.1"})') do
-  ipvs = IPVS::Service.new({"addr" => "10.0.0.1"})
-  ipvs.addr == "10.0.0.1"
-end
-
-assert('IPVS::Service.new({"addr" => "10.0.0.1", "port" => 80})') do
-  ipvs = IPVS::Service.new({"addr" => "10.0.0.1", "port" => 80})
-  ipvs.port == 80
-end
-
-assert('IPVS::Service.new({"addr" => "10.0.0.1", "proto" => "TCP"})') do
-  ipvs = IPVS::Service.new({"addr" => "10.0.0.1", "proto" => "TCP"})
-  ipvs.proto == "TCP"
-end
-
-assert('IPVS::Service.new({"addr" => "10.0.0.1", "sched_name" => "rr"}') do
-  ipvs = IPVS::Service.new({"addr" => "10.0.0.1", "sched_name" => "rr"})
-  ipvs.sched_name == "rr"
-end
+require '../test/helper'
 
 assert('IPVS::Dest.new({"addr" => "10.0.0.1"})') do
   dest = IPVS::Dest.new({"addr" => "10.0.0.1"})
@@ -65,31 +40,33 @@ assert('d = IPVS::Dest.new({"addr" => "10.0.0.1", "weight" => 5, "conn" => "tun"
   dest.conn = "NAT" and dest.conn == "NAT"
 end
 
-# local setup: ci/setup.sh
-assert('IPVS::Service.get') do
-  expect = [
-    {
-      "protocol"=>"TCP",
-      "addr"=>"127.0.0.1",
-      "port"=>80,
-      "sched_name"=>"rr",
-      "dests"=> [{
-          "addr"=>"127.0.0.1",
-          "port"=>80,
-          "weight"=>256,
-          "conn"=>"DR"
-      }]
-    }
-  ]
-  s = IPVS::Service.new({"addr" => "127.0.0.1", "port" => 80, "sched_name" => "rr"})
-  d = IPVS::Dest.new({"addr" => "127.0.0.1", "weight" => 256, "port" => 80, "conn" => "dr"})
+assert('IPVS::Dest#equal?') do
+  add_service_with do |s,d|
+    expect_dest = IPVS::Dest.new({"addr" => "192.168.0.1", "weight" => 256, "port" => 80, "conn" => "dr"})
+    ng_dest     = IPVS::Dest.new({"addr" => "192.168.0.3", "weight" => 256, "port" => 80, "conn" => "dr"})
 
-  begin
-    s.add_service
-    s.add_dest(d)
-    assert_equal(expect, IPVS::Service.get)
-  ensure
-    s.del_dest(d)
-    s.del_service
+    assert_true(d[0].equal?(expect_dest))
+    assert_false(d[0].equal?(ng_dest))
+  end
+end
+
+assert('IPVS::Dest.to_h') do
+  expect = {
+   "addr"=>"192.168.0.1",
+    "port"=>80,
+    "weight"=>256,
+    "conn"=>"DR"
+  }
+
+  add_service_with do |s,d|
+    assert_equal(expect, d.first.to_h)
+  end
+end
+
+assert('IPVS.Dest.inspect') do
+  add_service_with do |_,d|
+    i = d.first.inspect
+    h = d.first.to_h
+    assert_equal(i, h)
   end
 end
