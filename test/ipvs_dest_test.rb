@@ -62,3 +62,11 @@ assert('IPVS::Dest.to_h') do
     assert_equal(expect, d.first.to_h)
   end
 end
+
+assert('IPVS.Dest.inspect') do
+  add_service_with do |_,d|
+    i = d.first.inspect
+    h = d.first.to_h
+    assert_equal(i, h)
+  end
+end

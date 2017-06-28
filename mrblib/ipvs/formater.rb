@@ -7,5 +7,6 @@ class IPVS
         r[a] = v
       end
     end
+    alias_method :inspect, :to_h
   end
 end

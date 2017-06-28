@@ -93,3 +93,11 @@ assert('IPVS::Service.to_h') do
     assert_equal(expect, s.first.to_h)
   end
 end
+
+assert('IPVS.Service.inspect') do
+  add_service_with do |s,_|
+    i = s.first.inspect
+    h = s.first.to_h
+    assert_equal(i, h)
+  end
+end
