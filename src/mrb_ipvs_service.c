@@ -223,6 +223,7 @@ static inline const char *fwd_name(unsigned flags)
 mrb_value mrb_update_service_dests(mrb_state *mrb, mrb_value self, struct ip_vs_get_services *get)
 {
   struct mrb_ipvs_service *ie;
+  ipvs_service_entry_t *se;
   struct ip_vs_get_dests *d;
   mrb_value dest, dests, h;
   ipvs_dest_entry_t *e;
@@ -239,36 +240,27 @@ mrb_value mrb_update_service_dests(mrb_state *mrb, mrb_value self, struct ip_vs_
   ie = DATA_PTR(self);
   dests = mrb_ary_new(mrb);
 
-  // allways (ie->ent->num_dests == 0) therefore, this process is necessary
-  for (i = 0; i < get->num_services; i++) {
-    if (ie->svc.protocol == get->entrytable[i].protocol &&
-        ie->svc.addr.ip == get->entrytable[i].addr.ip && ie->svc.port == get->entrytable[i].port &&
-        strcmp(ie->svc.sched_name, get->entrytable[i].sched_name) == 0) {
+  se = ipvs_get_service(ie->svc.fwmark, ie->svc.af, ie->svc.protocol, ie->svc.addr, ie->svc.port);
+  if(se && se->num_dests > 0) {
 
-      ipvs_service_entry_t *se = &(get->entrytable[i]);
-      if (se->num_dests == 0)
-        break;
-
-      if (!(d = ipvs_get_dests(se))) {
-        mrb_raisef(mrb, E_RUNTIME_ERROR, "%s", ipvs_strerror(errno));
-      }
-      ipvs_sort_dests(d, ipvs_cmp_dests);
-
-      for (i = 0; i < d->num_dests; i++) {
-        h = mrb_hash_new(mrb);
-        e = &d->entrytable[i];
-
-        inet_ntop(e->af, &(e->addr), pbuf, sizeof(pbuf));
-        mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "addr"), mrb_str_new_cstr(mrb, pbuf));
-        mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "port"), mrb_fixnum_value(ntohs(e->port)));
-        mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "weight"), mrb_fixnum_value(e->weight));
-        mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "conn"), mrb_str_new_cstr(mrb, fwd_name(e->conn_flags)));
-        dest = mrb_obj_new(mrb, mrb_class_get_under(mrb, mrb_class_get(mrb, "IPVS"), "Dest"), 1, &h);
-        mrb_ary_push(mrb, dests, dest);
-      }
-      mrb_free(mrb, d);
-      break;
+    if (!(d = ipvs_get_dests(se))) {
+      mrb_raisef(mrb, E_RUNTIME_ERROR, "%s", ipvs_strerror(errno));
     }
+    ipvs_sort_dests(d, ipvs_cmp_dests);
+
+    for (i = 0; i < d->num_dests; i++) {
+      h = mrb_hash_new(mrb);
+      e = &d->entrytable[i];
+
+      inet_ntop(e->af, &(e->addr), pbuf, sizeof(pbuf));
+      mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "addr"), mrb_str_new_cstr(mrb, pbuf));
+      mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "port"), mrb_fixnum_value(ntohs(e->port)));
+      mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "weight"), mrb_fixnum_value(e->weight));
+      mrb_hash_set(mrb, h, mrb_str_new_cstr(mrb, "conn"), mrb_str_new_cstr(mrb, fwd_name(e->conn_flags)));
+      dest = mrb_obj_new(mrb, mrb_class_get_under(mrb, mrb_class_get(mrb, "IPVS"), "Dest"), 1, &h);
+      mrb_ary_push(mrb, dests, dest);
+    }
+    mrb_free(mrb, d);
   }
   mrb_iv_set(mrb, self, mrb_intern_lit(mrb, "@dests"), dests);
 
