@@ -108,7 +108,7 @@ static mrb_value mrb_ipvs_service_init(mrb_state *mrb, mrb_value self) {
           IP_VS_SCHEDNAME_MAXLEN);
 
   mrb_data_init(self, ie, &mrb_ipvs_service_type);
-  mrb_update_service_dests(mrb, self, NULL);
+  mrb_update_service_dests(mrb, self);
 
   return self;
 }
@@ -184,7 +184,7 @@ static mrb_value mrb_ipvs_service_add_dest(mrb_state *mrb, mrb_value self) {
   ie = DATA_PTR(arg);
   mrb_iv_set(mrb, arg, mrb_intern_lit(mrb, "@service"), self);
   ipvs_add_dest(DATA_PTR(self), &ie->dest);
-  return mrb_update_service_dests(mrb, self, NULL);
+  return mrb_update_service_dests(mrb, self);
 }
 
 static mrb_value mrb_ipvs_service_del_dest(mrb_state *mrb, mrb_value self) {
@@ -196,7 +196,7 @@ static mrb_value mrb_ipvs_service_del_dest(mrb_state *mrb, mrb_value self) {
   }
   ie = DATA_PTR(arg);
   ipvs_del_dest(DATA_PTR(self), &ie->dest);
-  return mrb_update_service_dests(mrb, self, NULL);
+  return mrb_update_service_dests(mrb, self);
 }
 
 static inline const char *fwd_name(unsigned flags)
@@ -220,7 +220,7 @@ static inline const char *fwd_name(unsigned flags)
   return fwd;
 }
 
-mrb_value mrb_update_service_dests(mrb_state *mrb, mrb_value self, struct ip_vs_get_services *get)
+mrb_value mrb_update_service_dests(mrb_state *mrb, mrb_value self)
 {
   struct mrb_ipvs_service *ie;
   ipvs_service_entry_t *se;
@@ -229,13 +229,6 @@ mrb_value mrb_update_service_dests(mrb_state *mrb, mrb_value self, struct ip_vs_
   ipvs_dest_entry_t *e;
   char pbuf[INET6_ADDRSTRLEN];
   int i;
-
-  if(get == NULL) {
-    if (ipvs_getinfo() == -1) {
-      mrb_raise(mrb, E_RUNTIME_ERROR, "Can't update ipvsinfo.");
-    }
-    get = mrb_ipvs_get_services(mrb);
-  }
 
   ie = DATA_PTR(self);
   dests = mrb_ary_new(mrb);
